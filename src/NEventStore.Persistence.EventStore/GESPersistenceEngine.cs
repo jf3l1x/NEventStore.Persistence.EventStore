@@ -18,8 +18,30 @@ namespace NEventStore.Persistence.GES
         private const int WritePageSize = 500;
         private const int ReadPageSize = 500;
 
-        private bool _disposed;
+        private class VersionRange
+        {
 
+            public VersionRange(int minVersion, int maxVersion)
+            {
+                MinVersion = TranslateVersion(minVersion);
+                MaxVersion = TranslateVersion(maxVersion);
+                EventCount = MaxVersion - MinVersion + 1;
+                
+            }
+            private int TranslateVersion(int streamVersion)
+            {
+                if (streamVersion > 0)
+                {
+                    return streamVersion - 1;
+                }
+                return 0;
+            }
+            public int MinVersion { get; private set; }
+            public int MaxVersion { get; private set; }
+            public int EventCount { get; private set; }
+        }
+        private bool _disposed;
+        
         public GESPersistenceEngine(IEventStoreConnection connection, IEventStoreSerializer serializer)
         {
             _connection = connection;
@@ -35,8 +57,9 @@ namespace NEventStore.Persistence.GES
 
         public IEnumerable<ICommit> GetFrom(string bucketId, string streamId, int minRevision, int maxRevision)
         {
+            var range = new VersionRange(minRevision, maxRevision);
             StreamEventsSlice slice = _connection.ReadStreamEventsForwardAsync(HashStreamName(bucketId, streamId),
-                TranslateVersion(minRevision), maxRevision - minRevision+1, true).Result;
+                range.MinVersion, range.EventCount, true).Result;
             PersistentEvent[] events = slice.Events.Select(evt =>
                 new PersistentEvent(evt, _serializer)).ToArray();
             return
@@ -168,14 +191,7 @@ namespace NEventStore.Persistence.GES
             get { return _disposed; }
         }
 
-        private int TranslateVersion(int streamVersion)
-        {
-            if (streamVersion > 0)
-            {
-                return streamVersion - 1;
-            }
-            return 0;
-        }
+        
 
         private void AddStream(string bucketId, string streamId)
         {
