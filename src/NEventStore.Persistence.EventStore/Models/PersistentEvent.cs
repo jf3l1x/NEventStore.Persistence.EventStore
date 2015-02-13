@@ -22,7 +22,9 @@ namespace NEventStore.Persistence.GES.Models
             {
                 {Headers.CommitId, attempt.CommitId},
                 {Headers.CommitStamp, attempt.CommitStamp},
-                {Headers.BucketId, attempt.BucketId}
+                {Headers.BucketId, attempt.BucketId},
+                {Headers.CommitSequence, attempt.CommitSequence},
+                {Headers.StreamRevision, attempt.StreamRevision}
             };
             AddHeaders(message.Headers);
             AddCommitHeaders(attempt);
@@ -45,7 +47,14 @@ namespace NEventStore.Persistence.GES.Models
                 Headers = _headers
             };
         }
-
+        public int StreamRevision
+        {
+            get { return (int)_headers[Headers.StreamRevision]; }
+        }
+        public int CommitSequence
+        {
+            get { return (int)_headers[Headers.CommitSequence]; }
+        }
         public Guid CommitId
         {
             get { return (Guid)_headers[Headers.CommitId]; }

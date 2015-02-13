@@ -19,13 +19,23 @@ namespace NEventStore.Persistence.GES.Extensions
             return new Commit(
                 attempt.BucketId,
                 attempt.StreamId,
-                result.NextExpectedVersion - 1,
+                result.NextExpectedVersion,
                 attempt.CommitId,
-                (int)result.LogPosition.CommitPosition,
+                attempt.CommitSequence,
                 DateTime.UtcNow,
                 result.LogPosition.CommitPosition.ToString(),
                 attempt.Headers, attempt.Events);
 
+        }
+
+        public static int ExpectedVersion(this CommitAttempt attempt)
+        {
+            var expected= attempt.StreamRevision - attempt.Events.Count-1;
+            if (expected == -1)
+            {
+                return EventStore.ClientAPI.ExpectedVersion.NoStream;
+            }
+            return expected;
         }
     }
 }

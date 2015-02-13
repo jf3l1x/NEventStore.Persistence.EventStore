@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using EventStore.ClientAPI;
 using NEventStore.Persistence.GES.Events;
 using NEventStore.Persistence.GES.Extensions;
 using NEventStore.Persistence.GES.Models;
 using NEventStore.Persistence.GES.Services;
-using NEventStore.Serialization;
 
 namespace NEventStore.Persistence.GES
 {
@@ -18,6 +15,8 @@ namespace NEventStore.Persistence.GES
         private readonly List<string> _buckets;
         private readonly IEventStoreConnection _connection;
         private readonly IEventStoreSerializer _serializer;
+        private const int WritePageSize = 500;
+        private const int ReadPageSize = 500;
 
         private bool _disposed;
 
@@ -36,48 +35,55 @@ namespace NEventStore.Persistence.GES
 
         public IEnumerable<ICommit> GetFrom(string bucketId, string streamId, int minRevision, int maxRevision)
         {
-            var slice = _connection.ReadStreamEventsForwardAsync(HashStreamName(bucketId, streamId),
-                TranslateVersion(minRevision), maxRevision - minRevision, true).Result;
-            var events=slice.Events.Select(evt => 
-                new PersistentEvent(evt,_serializer)).ToArray();
+            StreamEventsSlice slice = _connection.ReadStreamEventsForwardAsync(HashStreamName(bucketId, streamId),
+                TranslateVersion(minRevision), maxRevision - minRevision+1, true).Result;
+            PersistentEvent[] events = slice.Events.Select(evt =>
+                new PersistentEvent(evt, _serializer)).ToArray();
             return
-                events.GroupBy(c => new {Id = c.CommitId, Stamp = c.CommitStamp})
+                events.GroupBy(c => c.CommitId)
                     .Select(
                         g =>
-                            new Commit(bucketId, streamId, 0, g.Key.Id, 0, g.Key.Stamp, string.Empty, g.First().GetCommitHeaders(),
-                                g.Select(e => e.ToEventMessage())));
+                        {
+                            PersistentEvent first = g.First();
+                            return new Commit(bucketId, streamId, first.StreamRevision, g.Key, first.CommitSequence,
+                                first.CommitStamp, string.Empty, first.GetCommitHeaders(),
+                                g.Select(e => e.ToEventMessage()))
+                                ;
+                        });
         }
 
         public ICommit Commit(CommitAttempt attempt)
         {
             string streamId = attempt.GetHashedStreamName();
-            EventStoreTransaction transaction =
-                _connection.StartTransactionAsync(streamId, ExpectedVersionToWriteTranslated(attempt.StreamRevision)).Result;
-            try
+            
+            if (!_buckets.Contains(attempt.BucketId))
             {
-                if (!_buckets.Contains(attempt.BucketId))
-                {
-                    AddBucket(attempt.BucketId);
-                }
-                if (attempt.StreamRevision == 1)
-                {
-                    AddStream(attempt.BucketId, attempt.StreamId);
-                }
-                WriteResult result =
-                    _connection.AppendToStreamAsync(streamId, ExpectedVersionToWriteTranslated(attempt.StreamRevision),
-                        attempt.Events.Select(evt => new PersistentEvent(evt,attempt).ToEventData(_serializer))).Result;
+                AddBucket(attempt.BucketId);
+            }
+            if (attempt.ExpectedVersion() == ExpectedVersion.NoStream)
+            {
+                AddStream(attempt.BucketId, attempt.StreamId);
+            }
+            
+            var eventsToSave =
+                   attempt.Events.Select(evt => new PersistentEvent(evt, attempt).ToEventData(_serializer)).ToArray();
 
-                transaction.CommitAsync();
-                return attempt.ToCommit(result);
-            }
-            catch (Exception ex)
+            if (attempt.Events.Count < WritePageSize)
             {
-                if (transaction != null)
-                {
-                    transaction.Rollback();
-                }
-                throw;
+               return attempt.ToCommit(_connection.AppendToStreamAsync(streamId, attempt.ExpectedVersion(), eventsToSave).Result);
             }
+
+            var transaction = _connection.StartTransactionAsync(streamId, attempt.ExpectedVersion()).Result;
+
+            var position = 0;
+            while (position < eventsToSave.Length)
+            {
+                var pageEvents = eventsToSave.Skip(position).Take(WritePageSize);
+                transaction.WriteAsync(pageEvents);
+                position += WritePageSize;
+            }
+
+            return attempt.ToCommit(transaction.CommitAsync().Result);
         }
 
         public ISnapshot GetSnapshot(string bucketId, string streamId, int maxRevision)
@@ -162,19 +168,11 @@ namespace NEventStore.Persistence.GES
             get { return _disposed; }
         }
 
-        private int ExpectedVersionToWriteTranslated(int expectedVersion)
-        {
-            if (expectedVersion <= 1)
-            {
-                return ExpectedVersion.NoStream;
-            }
-            return TranslateVersion(expectedVersion);
-        }
         private int TranslateVersion(int streamVersion)
         {
             if (streamVersion > 0)
             {
-                return streamVersion - 1;    
+                return streamVersion - 1;
             }
             return 0;
         }
@@ -187,8 +185,10 @@ namespace NEventStore.Persistence.GES
 
         private void AddBucket(string bucketId)
         {
+            _buckets.Add(bucketId);
             _connection.AppendToStreamAsync(NES_BUCKETS, ExpectedVersion.Any,
                 new BucketCreated {Bucket = bucketId}.ToEventData(_serializer)).Wait();
+
         }
 
         private string CreateBucketStreamsStreamName(string bucketId)
