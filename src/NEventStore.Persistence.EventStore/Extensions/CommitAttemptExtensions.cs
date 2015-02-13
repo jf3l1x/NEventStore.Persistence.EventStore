@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.ClientAPI;
+using NEventStore.Persistence.GES.Services;
 
 namespace NEventStore.Persistence.GES.Extensions
 {
@@ -10,6 +11,24 @@ namespace NEventStore.Persistence.GES.Extensions
             return string.Format("NES.{0}.{1}", attempt.BucketId, attempt.StreamId).ToHashRepresentation();
         }
 
+        public static string GetHashedCommitStreamName(this CommitAttempt attempt)
+        {
+            return string.Format("NES.{0}.{1}.COMMITS", attempt.BucketId, attempt.StreamId).ToHashRepresentation();
+        }
+        public static int ExpectedCommitVersion(this CommitAttempt attempt)
+        {
+            var expected = attempt.CommitSequence - 1;
+            if (expected == 0)
+            {
+                return EventStore.ClientAPI.ExpectedVersion.NoStream;
+            }
+            return expected;
+        }
+
+        public static EventData ToEventData(this CommitAttempt attempt,IEventStoreSerializer serializer)
+        {
+            return new EventData(Guid.NewGuid(), typeof(CommitAttempt).FullName, serializer.IsJsonSerializer, serializer.Serialize(attempt),new byte[0]);
+        }
         public static ICommit ToCommit(this CommitAttempt attempt,WriteResult result)
         {
             if (attempt == null)

@@ -29,6 +29,7 @@ namespace NEventStore.Persistence.GES.Models
             AddHeaders(message.Headers);
             AddCommitHeaders(attempt);
             _type = message.Body.GetType().FullName;
+            
         }
 
         public Dictionary<string, object> GetCommitHeaders()
@@ -98,5 +99,6 @@ namespace NEventStore.Persistence.GES.Models
             return new EventData(Guid.NewGuid(), _type, serializer.IsJsonSerializer, serializer.Serialize(_message.Body),
                 serializer.Serialize(_headers));
         }
+        
     }
 }

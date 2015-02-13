@@ -10,8 +10,6 @@ namespace NEventStore.Persistence.GES.Extensions
 {
     public static class EventMessageExtensions
     {
-       
-
         public static EventData ToEventData(this IEvent message, IEventStoreSerializer serializer)
         {
             var serialized = serializer.Serialize(message);

@@ -80,6 +80,7 @@ namespace NEventStore.Persistence.GES
         public ICommit Commit(CommitAttempt attempt)
         {
             string streamId = attempt.GetHashedStreamName();
+            EventStoreTransaction transaction=null;
             try
             {
                 if (!_buckets.Contains(attempt.BucketId))
@@ -90,29 +91,37 @@ namespace NEventStore.Persistence.GES
                 {
                     AddStream(attempt.BucketId, attempt.StreamId);
                 }
-
+                
                 var eventsToSave =
                        attempt.Events.Select(evt => new PersistentEvent(evt, attempt).ToEventData(_serializer)).ToArray();
 
-                if (attempt.Events.Count < WritePageSize)
-                {
-                    return attempt.ToCommit(_connection.AppendToStreamAsync(streamId, attempt.ExpectedVersion(), eventsToSave).Result);
-                }
-
-                var transaction = _connection.StartTransactionAsync(streamId, attempt.ExpectedVersion()).Result;
+                transaction = _connection.StartTransactionAsync(streamId, attempt.ExpectedVersion()).Result;
 
                 var position = 0;
                 while (position < eventsToSave.Length)
                 {
                     var pageEvents = eventsToSave.Skip(position).Take(WritePageSize);
-                    transaction.WriteAsync(pageEvents);
+                    transaction.WriteAsync(pageEvents).Wait();
                     position += WritePageSize;
                 }
-
+                WriteCommit(attempt);
                 return attempt.ToCommit(transaction.CommitAsync().Result);
             }
             catch (AggregateException ex)
             {
+                if (transaction != null)
+                {
+                    try
+                    {
+                        
+                        transaction.Rollback();
+                    }
+                    catch (Exception)
+                    {
+                        //if the error happens inside the Commit, the transaction is aborted!??
+                    }
+                    
+                }
                 foreach (var exception in ex.InnerExceptions   )
                 {
                     if (exception is WrongExpectedVersionException)
@@ -124,6 +133,12 @@ namespace NEventStore.Persistence.GES
                 throw;
             }
             
+        }
+
+        private void WriteCommit(CommitAttempt attempt)
+        {
+            _connection.AppendToStreamAsync(attempt.GetHashedCommitStreamName(), attempt.ExpectedCommitVersion(),
+                attempt.ToEventData(_serializer)).Wait();
         }
 
         public ISnapshot GetSnapshot(string bucketId, string streamId, int maxRevision)
