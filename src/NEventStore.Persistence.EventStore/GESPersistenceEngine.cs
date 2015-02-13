@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Exceptions;
+using NEventStore.Logging;
 using NEventStore.Persistence.GES.Events;
 using NEventStore.Persistence.GES.Extensions;
 using NEventStore.Persistence.GES.Models;
@@ -78,35 +80,50 @@ namespace NEventStore.Persistence.GES
         public ICommit Commit(CommitAttempt attempt)
         {
             string streamId = attempt.GetHashedStreamName();
+            try
+            {
+                if (!_buckets.Contains(attempt.BucketId))
+                {
+                    AddBucket(attempt.BucketId);
+                }
+                if (attempt.ExpectedVersion() == ExpectedVersion.NoStream)
+                {
+                    AddStream(attempt.BucketId, attempt.StreamId);
+                }
+
+                var eventsToSave =
+                       attempt.Events.Select(evt => new PersistentEvent(evt, attempt).ToEventData(_serializer)).ToArray();
+
+                if (attempt.Events.Count < WritePageSize)
+                {
+                    return attempt.ToCommit(_connection.AppendToStreamAsync(streamId, attempt.ExpectedVersion(), eventsToSave).Result);
+                }
+
+                var transaction = _connection.StartTransactionAsync(streamId, attempt.ExpectedVersion()).Result;
+
+                var position = 0;
+                while (position < eventsToSave.Length)
+                {
+                    var pageEvents = eventsToSave.Skip(position).Take(WritePageSize);
+                    transaction.WriteAsync(pageEvents);
+                    position += WritePageSize;
+                }
+
+                return attempt.ToCommit(transaction.CommitAsync().Result);
+            }
+            catch (AggregateException ex)
+            {
+                foreach (var exception in ex.InnerExceptions   )
+                {
+                    if (exception is WrongExpectedVersionException)
+                    {
+                        throw new ConcurrencyException(exception.Message,exception);
+                    }
+                }
+                LogFactory.BuildLogger(GetType()).Error(ex.ToString());
+                throw;
+            }
             
-            if (!_buckets.Contains(attempt.BucketId))
-            {
-                AddBucket(attempt.BucketId);
-            }
-            if (attempt.ExpectedVersion() == ExpectedVersion.NoStream)
-            {
-                AddStream(attempt.BucketId, attempt.StreamId);
-            }
-            
-            var eventsToSave =
-                   attempt.Events.Select(evt => new PersistentEvent(evt, attempt).ToEventData(_serializer)).ToArray();
-
-            if (attempt.Events.Count < WritePageSize)
-            {
-               return attempt.ToCommit(_connection.AppendToStreamAsync(streamId, attempt.ExpectedVersion(), eventsToSave).Result);
-            }
-
-            var transaction = _connection.StartTransactionAsync(streamId, attempt.ExpectedVersion()).Result;
-
-            var position = 0;
-            while (position < eventsToSave.Length)
-            {
-                var pageEvents = eventsToSave.Skip(position).Take(WritePageSize);
-                transaction.WriteAsync(pageEvents);
-                position += WritePageSize;
-            }
-
-            return attempt.ToCommit(transaction.CommitAsync().Result);
         }
 
         public ISnapshot GetSnapshot(string bucketId, string streamId, int maxRevision)

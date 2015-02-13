@@ -14,6 +14,39 @@ namespace NEventStore.Persistence.GES.Tests.Steps
     [Scope(Feature = "Persistence")]
     internal class PersistenceSteps
     {
+        private class SequenceGenerator
+        {
+            private readonly int? _fixedValue;
+            private int _sequence;
+
+            public SequenceGenerator(int? fixedValue=null)
+            {
+                _fixedValue = fixedValue;
+                _sequence = 0;
+
+            }
+
+            public int ConsumeCurrent()
+            {
+                var retval = ViewCurrent();
+                _sequence++;
+                return retval;
+            }
+
+            public int ViewCurrent()
+            {
+                if (_fixedValue.HasValue)
+                {
+                    return _fixedValue.Value;
+                }
+                return _sequence;
+            }
+            public void Increment(int count)
+            {
+                _sequence += count;
+
+            }
+        }
         private class CommitAttemptGenerationInfo
         {
             public CommitAttemptGenerationInfo()
@@ -47,20 +80,33 @@ namespace NEventStore.Persistence.GES.Tests.Steps
 
             }
 
-            public IEnumerable<CommitAttempt> Generate()
+            public void AddInfo(int count, Guid bucketId,Guid streamId)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    AddInfo(new CommitAttemptGenerationInfo()
+                    {
+                        BucketId = bucketId,CommitId = Guid.NewGuid(),EventCount = 1,Order = i,StreamId = streamId
+                    });
+                }
+            }
+            public IEnumerable<CommitAttempt> Generate(int? fixedCommitSequence=null)
             {
                 var commitAttempts=new List<CommitAttempt>();
-                int streamRevision = 0;
-                int commitSequence = 1;
+                var commitSequence = new SequenceGenerator(fixedCommitSequence);
+                var streamRevision = new SequenceGenerator();
+                commitSequence.Increment(1);
                 foreach (var attempt in _attempts.OrderBy(a=>a.Order))
                 {
-                    streamRevision += attempt.EventCount;
+                    streamRevision.Increment(attempt.EventCount);
                     commitAttempts.Add(new CommitAttempt(attempt.BucketId.ToString("N"), attempt.StreamId.ToString("N"),
-                        streamRevision, attempt.CommitId, commitSequence++, DateTime.UtcNow, attempt.Headers,
+                        streamRevision.ViewCurrent(), attempt.CommitId, commitSequence.ConsumeCurrent(), DateTime.UtcNow, attempt.Headers,
                         attempt.GenerateEvents()));
                 }
                 return commitAttempts;
             }
+
+          
         }
         public PersistenceSteps()
         {
@@ -155,7 +201,16 @@ namespace NEventStore.Persistence.GES.Tests.Steps
         [When(@"I Commit the commitAttempt")]
         public void WhenICommitTheCommitAttempt()
         {
-            ScenarioContext.Current.Get<GESPersistenceEngine>().Commit(ScenarioContext.Current.Get<CommitAttempt>());
+            try
+            {
+                ScenarioContext.Current.Get<GESPersistenceEngine>().Commit(ScenarioContext.Current.Get<CommitAttempt>());
+            }
+            catch (Exception ex)
+            {
+                
+                ScenarioContext.Current.Set(ex,Keys.CurrentException);
+            }
+            
         }
 
         [When(@"I Get all commits for the current Stream")]
@@ -264,7 +319,44 @@ namespace NEventStore.Persistence.GES.Tests.Steps
         [Then(@"The Second Commit should have the CommitId ""(.*)""")]
         public void ThenTheSecondCommitShouldHaveTheCommitId(string commitId)
         {
-            ScenarioContext.Current.Get<IEnumerable<ICommit>>().Skip(1).First().CommitId.Should().Be(commitId);
+            if (!string.IsNullOrEmpty(commitId))
+            {
+                ScenarioContext.Current.Get<IEnumerable<ICommit>>().Skip(1).First().CommitId.Should().Be(commitId);    
+            }
+            
+        }
+        [Then(@"the current Exception should be of type ""(.*)""")]
+        public void ThenTheCurrentExceptionShouldBeOfType(string typeName)
+        {
+            var exception = ScenarioContext.Current.Get<Exception>(Keys.CurrentException);
+            exception.Should().NotBeNull();
+            exception.GetType().FullName.Should().Be(typeName);
+        }
+        [Given(@"I Have (.*) commitAttemps with the same CommitSequence")]
+        public void GivenIHaveCommitAttempsWithTheSameCommitSequence(int quantity)
+        {
+            var generator = new CommitAttemptGenerator();
+            generator.AddInfo(quantity,ScenarioContext.Current.Get<Guid>(Keys.BucketId),Guid.NewGuid());
+            ScenarioContext.Current.Add(generator.Generate(1));
+        }
+
+        [When(@"I Commit all the commit attemps")]
+        public void WhenICommitAllTheCommitAttemps()
+        {
+            foreach (var attempt in ScenarioContext.Current.Get<IEnumerable<CommitAttempt>>())
+            {
+                try
+                {
+                    ScenarioContext.Current.Get<GESPersistenceEngine>().Commit(attempt);
+                }
+                catch (Exception ex)
+                {
+                    ScenarioContext.Current.Set(ex, Keys.CurrentException);
+                    break;
+                    
+                }
+                
+            }
         }
 
     }

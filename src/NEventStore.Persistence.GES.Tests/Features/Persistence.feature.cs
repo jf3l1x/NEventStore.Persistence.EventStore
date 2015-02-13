@@ -296,9 +296,13 @@ this.FeatureBackground();
         
         [NUnit.Framework.TestAttribute()]
         [NUnit.Framework.DescriptionAttribute("The ICommit Enumerable should be in the correct order")]
-        public virtual void TheICommitEnumerableShouldBeInTheCorrectOrder()
+        [NUnit.Framework.TestCaseAttribute("1", "8", "4", "{74996A50-75BA-4995-B111-B585008C5FAE}", "{7714ED64-D769-463E-8970-35672559E217}", null)]
+        [NUnit.Framework.TestCaseAttribute("3", "5", "2", "{7714ED64-D769-463E-8970-35672559E217}", "{007E004A-C042-4001-977E-ACE5F7200999}", null)]
+        [NUnit.Framework.TestCaseAttribute("3", "6", "2", "{7714ED64-D769-463E-8970-35672559E217}", "{007E004A-C042-4001-977E-ACE5F7200999}", null)]
+        [NUnit.Framework.TestCaseAttribute("7", "7", "1", "{39DBE31A-6520-4BE7-BC91-1D9831ED4B48}", "", null)]
+        public virtual void TheICommitEnumerableShouldBeInTheCorrectOrder(string from, string to, string commitCount, string firstCommitId, string seccondCommitId, string[] exampleTags)
         {
-            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("The ICommit Enumerable should be in the correct order", ((string[])(null)));
+            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("The ICommit Enumerable should be in the correct order", exampleTags);
 #line 65
 this.ScenarioSetup(scenarioInfo);
 #line 3
@@ -332,16 +336,54 @@ this.FeatureBackground();
 #line 66
  testRunner.Given("I Have following commit attemps that was commited in this order", ((string)(null)), table4, "Given ");
 #line 72
- testRunner.When("I Get all commits fro the Stream \"{1F251B9C-C872-4032-A2ED-CC848150DB9E}\" from re" +
-                    "vision 3 to revision 5", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+ testRunner.When(string.Format("I Get all commits fro the Stream \"{{1F251B9C-C872-4032-A2ED-CC848150DB9E}}\" from " +
+                        "revision {0} to revision {1}", from, to), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line 73
- testRunner.Then("There should be 2 commits", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+ testRunner.Then(string.Format("There should be {0} commits", commitCount), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line 74
- testRunner.Then("The First Commit should have the CommitId \"{7714ED64-D769-463E-8970-35672559E217}" +
-                    "\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+ testRunner.Then(string.Format("The First Commit should have the CommitId \"{0}\"", firstCommitId), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line 75
- testRunner.Then("The Second Commit should have the CommitId \"{007E004A-C042-4001-977E-ACE5F7200999" +
-                    "}\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+ testRunner.Then(string.Format("The Second Commit should have the CommitId \"{0}\"", seccondCommitId), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line hidden
+            this.ScenarioCleanup();
+        }
+        
+        [NUnit.Framework.TestAttribute()]
+        [NUnit.Framework.DescriptionAttribute("Trying to commit the same commit attempt should raise a ConcurrencyException")]
+        public virtual void TryingToCommitTheSameCommitAttemptShouldRaiseAConcurrencyException()
+        {
+            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Trying to commit the same commit attempt should raise a ConcurrencyException", ((string[])(null)));
+#line 83
+this.ScenarioSetup(scenarioInfo);
+#line 3
+this.FeatureBackground();
+#line 84
+ testRunner.When("I Commit the commitAttempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 85
+ testRunner.And("I Commit the commitAttempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+#line 86
+ testRunner.Then("the current Exception should be of type \"NEventStore.ConcurrencyException\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line hidden
+            this.ScenarioCleanup();
+        }
+        
+        [NUnit.Framework.TestAttribute()]
+        [NUnit.Framework.DescriptionAttribute("Trying to commit the different commits with the same commit sequence should raise" +
+            " a ConcurrencyException")]
+        public virtual void TryingToCommitTheDifferentCommitsWithTheSameCommitSequenceShouldRaiseAConcurrencyException()
+        {
+            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Trying to commit the different commits with the same commit sequence should raise" +
+                    " a ConcurrencyException", ((string[])(null)));
+#line 88
+this.ScenarioSetup(scenarioInfo);
+#line 3
+this.FeatureBackground();
+#line 89
+ testRunner.Given("I Have 2 commitAttemps with the same CommitSequence", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 90
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 91
+ testRunner.Then("the current Exception should be of type \"NEventStore.ConcurrencyException\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();
         }

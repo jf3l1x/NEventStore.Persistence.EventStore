@@ -62,17 +62,34 @@ Scenario: Successfull commits should add the commit to the set of undispatched c
 @ignore
 Scenario: Successfull commits should cause the stream to be found in the list of streams to snapshot
 
-Scenario: The ICommit Enumerable should be in the correct order
+Scenario Outline: The ICommit Enumerable should be in the correct order
 	Given I Have following commit attemps that was commited in this order
 	 | Order | CommitId                               | StreamId                               | EventCount |
 	 | 1     | {74996A50-75BA-4995-B111-B585008C5FAE} | {1F251B9C-C872-4032-A2ED-CC848150DB9E} | 2          |
 	 | 2     | {7714ED64-D769-463E-8970-35672559E217} | {1F251B9C-C872-4032-A2ED-CC848150DB9E} | 2          |
 	 | 3     | {007E004A-C042-4001-977E-ACE5F7200999} | {1F251B9C-C872-4032-A2ED-CC848150DB9E} | 2          |
 	 | 4     | {39DBE31A-6520-4BE7-BC91-1D9831ED4B48} | {1F251B9C-C872-4032-A2ED-CC848150DB9E} | 2          |
-	When I Get all commits fro the Stream "{1F251B9C-C872-4032-A2ED-CC848150DB9E}" from revision 3 to revision 5
-	Then There should be 2 commits
-	Then  The First Commit should have the CommitId "{7714ED64-D769-463E-8970-35672559E217}"
-	Then  The Second Commit should have the CommitId "{007E004A-C042-4001-977E-ACE5F7200999}"
+	When I Get all commits fro the Stream "{1F251B9C-C872-4032-A2ED-CC848150DB9E}" from revision <From> to revision <To>
+	Then There should be <CommitCount> commits
+	Then  The First Commit should have the CommitId "<FirstCommitId>"
+	Then  The Second Commit should have the CommitId "<SeccondCommitId>"
+	Examples: 
+	| From | To | CommitCount | FirstCommitId                          | SeccondCommitId                        |
+	| 1    | 8  | 4           | {74996A50-75BA-4995-B111-B585008C5FAE} | {7714ED64-D769-463E-8970-35672559E217} |
+	| 3    | 5  | 2           | {7714ED64-D769-463E-8970-35672559E217} | {007E004A-C042-4001-977E-ACE5F7200999} |
+	| 3    | 6  | 2           | {7714ED64-D769-463E-8970-35672559E217} | {007E004A-C042-4001-977E-ACE5F7200999} |
+	| 7    | 7  | 1           | {39DBE31A-6520-4BE7-BC91-1D9831ED4B48} |                                        |
+	
+Scenario: Trying to commit the same commit attempt should raise a ConcurrencyException
+	When I Commit the commitAttempt
+	And I Commit the commitAttempt
+	Then the current Exception should be of type "NEventStore.ConcurrencyException"
+
+Scenario: Trying to commit the different commits with the same commit sequence should raise a ConcurrencyException
+	Given I Have 2 commitAttemps with the same CommitSequence
+	When I Commit all the commit attemps
+	Then the current Exception should be of type "NEventStore.ConcurrencyException"
+
 
 	
 
