@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using EventStore.ClientAPI;
 using FluentAssertions;
+using NEventStore.Persistence.GES.Services;
 using NEventStore.Persistence.GES.Tests.Extensions;
 using NEventStore.Serialization;
 using TechTalk.SpecFlow;

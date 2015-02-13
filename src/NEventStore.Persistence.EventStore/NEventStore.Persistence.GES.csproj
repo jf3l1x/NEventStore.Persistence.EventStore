@@ -48,7 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommitEvent.cs" />
+    <Compile Include="Models\PersistentEvent.cs" />
     <Compile Include="Events\BucketCreated.cs" />
     <Compile Include="Events\EventBase.cs" />
     <Compile Include="Events\IEvent.cs" />
@@ -58,14 +58,17 @@
     <Compile Include="Extensions\EventStoreConnectionExtensions.cs" />
     <Compile Include="GESPersistenceEngine.cs" />
     <Compile Include="Headers.cs" />
-    <Compile Include="IEventStoreSerializer.cs" />
-    <Compile Include="JsonNetSerializer.cs" />
+    <Compile Include="Services\CustomDictionaryConverter.cs" />
+    <Compile Include="Services\CustomKeyValuePairConverter.cs" />
+    <Compile Include="Services\IEventStoreSerializer.cs" />
+    <Compile Include="Services\JsonNetSerializer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Extensions\StreamNamingStrategy.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

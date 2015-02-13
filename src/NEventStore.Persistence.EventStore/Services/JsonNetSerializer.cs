@@ -2,7 +2,7 @@
 using System.IO;
 using Newtonsoft.Json;
 
-namespace NEventStore.Persistence.GES
+namespace NEventStore.Persistence.GES.Services
 {
     public class JsonNetSerializer : IEventStoreSerializer
     {
@@ -14,6 +14,9 @@ namespace NEventStore.Persistence.GES
         public byte[] Serialize(object graph)
         {
             var serializer = new JsonSerializer {NullValueHandling = NullValueHandling.Ignore};
+
+            serializer.Converters.Add(new CustomDictionaryConverter());
+            serializer.Converters.Add(new CustomKeyValuePairConverter());
             using (var ms = new MemoryStream())
             {
                 using (var sw = new StreamWriter(ms))
@@ -30,7 +33,9 @@ namespace NEventStore.Persistence.GES
 
         public object Deserialize(string type, byte[] data)
         {
-            var serializer = new JsonSerializer { NullValueHandling = NullValueHandling.Ignore };
+            var serializer = new JsonSerializer {NullValueHandling = NullValueHandling.Ignore};
+            serializer.Converters.Add(new CustomDictionaryConverter());
+            serializer.Converters.Add(new CustomKeyValuePairConverter());
             using (var ms = new MemoryStream(data))
             {
                 using (var sw = new StreamReader(ms))

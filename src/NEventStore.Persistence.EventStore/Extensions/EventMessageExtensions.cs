@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using EventStore.ClientAPI;
 using NEventStore.Persistence.GES.Events;
+using NEventStore.Persistence.GES.Services;
 using NEventStore.Serialization;
 
 namespace NEventStore.Persistence.GES.Extensions

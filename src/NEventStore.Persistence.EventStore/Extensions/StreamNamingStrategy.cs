@@ -10,7 +10,7 @@ namespace NEventStore.Persistence.GES.Extensions
 
         public static string ToHashRepresentation(this string name)
         {
-            return Convert.ToBase64String(Hasher.ComputeHash(Encoding.UTF8.GetBytes(name)));
+            return name;// Convert.ToBase64String(Hasher.ComputeHash(Encoding.UTF8.GetBytes(name)));
         }
         
     }

@@ -6,6 +6,8 @@ using System.Text;
 using EventStore.ClientAPI;
 using NEventStore.Persistence.GES.Events;
 using NEventStore.Persistence.GES.Extensions;
+using NEventStore.Persistence.GES.Models;
+using NEventStore.Persistence.GES.Services;
 using NEventStore.Serialization;
 
 namespace NEventStore.Persistence.GES
@@ -37,12 +39,12 @@ namespace NEventStore.Persistence.GES
             var slice = _connection.ReadStreamEventsForwardAsync(HashStreamName(bucketId, streamId),
                 TranslateVersion(minRevision), maxRevision - minRevision, true).Result;
             var events=slice.Events.Select(evt => 
-                new CommitEvent(evt,_serializer)).ToArray();
+                new PersistentEvent(evt,_serializer)).ToArray();
             return
                 events.GroupBy(c => new {Id = c.CommitId, Stamp = c.CommitStamp})
                     .Select(
                         g =>
-                            new Commit(bucketId, streamId, 0, g.Key.Id, 0, g.Key.Stamp, string.Empty, g.First().CommitHeaders,
+                            new Commit(bucketId, streamId, 0, g.Key.Id, 0, g.Key.Stamp, string.Empty, g.First().GetCommitHeaders(),
                                 g.Select(e => e.ToEventMessage())));
         }
 
@@ -63,7 +65,7 @@ namespace NEventStore.Persistence.GES
                 }
                 WriteResult result =
                     _connection.AppendToStreamAsync(streamId, ExpectedVersionToWriteTranslated(attempt.StreamRevision),
-                        attempt.Events.Select(evt => new CommitEvent(evt,attempt).ToEventData(_serializer))).Result;
+                        attempt.Events.Select(evt => new PersistentEvent(evt,attempt).ToEventData(_serializer))).Result;
 
                 transaction.CommitAsync();
                 return attempt.ToCommit(result);

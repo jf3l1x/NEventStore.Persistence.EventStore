@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.ClientAPI;
+using NEventStore.Persistence.GES.Services;
 using NEventStore.Serialization;
 
 namespace NEventStore.Persistence.GES.Extensions
