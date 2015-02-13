@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+
+  <Import Project="$(MSBuildCommunityTasksPath)\MSBuild.Community.Tasks.targets"/>
+
+  <PropertyGroup Condition=" '$(BuildConfiguration)' == '' ">
+    <BuildConfiguration>Release</BuildConfiguration>
+  </PropertyGroup>
+
+  <Target Name="DefineVersion">
+
+    <Message Text="Versão que será definida: $(Version)"/>
+
+    <Attrib Files="$(MSBuildProjectDirectory)\..\src\NEventStore.Persistence.EventStore\Properties\AssemblyInfo.cs" ReadOnly="False" />
+
+    <AssemblyInfo CodeLanguage="CS"
+                  OutputFile="$(MSBuildProjectDirectory)\..\src\NEventStore.Persistence.EventStore\Properties\AssemblyInfo.cs"
+                  GenerateClass="true"
+                  AssemblyCopyright="Copyright @ 2015"
+                  AssemblyCompany="Constant"
+                  AssemblyConfiguration="$(BuildConfiguration)"
+                  AssemblyVersion="$(Version)"
+                  AssemblyFileVersion="$(Version)"
+                  AssemblyInformationalVersion="$(Version)" />
+  </Target>
+   
+</Project>
