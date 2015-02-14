@@ -74,16 +74,20 @@ namespace NEventStore.Persistence.GES.Tests.Features
 #line 6
  testRunner.Given("The PersistentStore is empty", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line 7
- testRunner.Given("I Have a commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+ testRunner.Given("I Have defined a default bucket", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 8
+ testRunner.Given("that i have defined a default stream", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 9
+ testRunner.Given("that i have a CommitAttemptGenerator", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
         }
         
         [NUnit.Framework.TestAttribute()]
-        [NUnit.Framework.DescriptionAttribute("Heades can have period in key")]
-        public virtual void HeadesCanHavePeriodInKey()
+        [NUnit.Framework.DescriptionAttribute("Headers can have period in key")]
+        public virtual void HeadersCanHavePeriodInKey()
         {
-            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Heades can have period in key", ((string[])(null)));
-#line 9
+            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Headers can have period in key", ((string[])(null)));
+#line 11
 this.ScenarioSetup(scenarioInfo);
 #line 3
 this.FeatureBackground();
@@ -94,11 +98,11 @@ this.FeatureBackground();
             table1.AddRow(new string[] {
                         "key.1",
                         "value"});
-#line 11
- testRunner.Given("I set the following headers in the commit attempt", ((string)(null)), table1, "Given ");
-#line 14
- testRunner.When("I Commit the commitAttempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 12
+ testRunner.Given("I Have 1 commit attempt with the following headers", ((string)(null)), table1, "Given ");
 #line 15
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 16
  testRunner.And("I Get all commits for the current Stream", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
             TechTalk.SpecFlow.Table table2 = new TechTalk.SpecFlow.Table(new string[] {
@@ -107,7 +111,7 @@ this.FeatureBackground();
             table2.AddRow(new string[] {
                         "key.1",
                         "value"});
-#line 16
+#line 17
  testRunner.Then("the first commit should have the following headers", ((string)(null)), table2, "Then ");
 #line hidden
             this.ScenarioCleanup();
@@ -118,15 +122,17 @@ this.FeatureBackground();
         public virtual void SuccessfullCommitsShouldPersistTheStreamIdentifier()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Successfull commits should persist the stream identifier", ((string[])(null)));
-#line 20
+#line 21
 this.ScenarioSetup(scenarioInfo);
 #line 3
 this.FeatureBackground();
-#line 21
- testRunner.When("I Commit the commitAttempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line 22
- testRunner.And("I Get all commits for the current Stream", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+ testRunner.Given("I Have 1 commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line 23
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 24
+ testRunner.And("I Get all commits for the current Stream", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+#line 25
  testRunner.Then("The first commit should have the same stream identifier of the commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();
@@ -137,15 +143,17 @@ this.FeatureBackground();
         public virtual void SuccessfullCommitsShouldPersistTheStreamRevision()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Successfull commits should persist the stream revision", ((string[])(null)));
-#line 25
+#line 27
 this.ScenarioSetup(scenarioInfo);
 #line 3
 this.FeatureBackground();
-#line 26
- testRunner.When("I Commit the commitAttempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
-#line 27
- testRunner.And("I Get all commits for the current Stream", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line 28
+ testRunner.Given("I Have 1 commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 29
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 30
+ testRunner.And("I Get all commits for the current Stream", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+#line 31
  testRunner.Then("The first commit should have the same stream revision of the commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();
@@ -156,15 +164,17 @@ this.FeatureBackground();
         public virtual void SuccessfullCommitsShouldPersistTheCommitIdentifier()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Successfull commits should persist the commit identifier", ((string[])(null)));
-#line 30
+#line 33
 this.ScenarioSetup(scenarioInfo);
 #line 3
 this.FeatureBackground();
-#line 31
- testRunner.When("I Commit the commitAttempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
-#line 32
+#line 34
+ testRunner.Given("I Have 1 commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 35
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 36
  testRunner.And("I Get all commits for the current Stream", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
-#line 33
+#line 37
  testRunner.Then("The first commit should have the same stream identifier of the commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();
@@ -175,15 +185,17 @@ this.FeatureBackground();
         public virtual void SuccessfullCommitsShouldPersistTheCommitSequence()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Successfull commits should persist the commit sequence", ((string[])(null)));
-#line 35
+#line 39
 this.ScenarioSetup(scenarioInfo);
 #line 3
 this.FeatureBackground();
-#line 36
- testRunner.When("I Commit the commitAttempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
-#line 37
+#line 40
+ testRunner.Given("I Have 1 commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 41
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 42
  testRunner.And("I Get all commits for the current Stream", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
-#line 38
+#line 43
  testRunner.Then("The first commit should have the same commit sequence of the commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();
@@ -194,15 +206,17 @@ this.FeatureBackground();
         public virtual void SuccessfullCommitsShouldPersistTheCommitStamp()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Successfull commits should persist the commit stamp", ((string[])(null)));
-#line 40
+#line 45
 this.ScenarioSetup(scenarioInfo);
 #line 3
 this.FeatureBackground();
-#line 41
- testRunner.When("I Commit the commitAttempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
-#line 42
+#line 46
+ testRunner.Given("I Have 1 commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 47
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 48
  testRunner.And("I Get all commits for the current Stream", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
-#line 43
+#line 49
  testRunner.Then("The first commit should have a commit stamp within 5 seconds of the commit attemp" +
                     " stamp", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
@@ -214,7 +228,7 @@ this.FeatureBackground();
         public virtual void SuccessfullCommitsShouldPersistAllTheCommitAttemptHeaders()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Successfull commits should persist all the commit attempt headers", ((string[])(null)));
-#line 45
+#line 51
 this.ScenarioSetup(scenarioInfo);
 #line 3
 this.FeatureBackground();
@@ -231,14 +245,14 @@ this.FeatureBackground();
             table3.AddRow(new string[] {
                         "key3",
                         "value3"});
-#line 46
- testRunner.Given("I set the following headers in the commit attempt", ((string)(null)), table3, "Given ");
-#line 51
- testRunner.When("I Commit the commitAttempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line 52
+ testRunner.Given("I Have 1 commit attempt with the following headers", ((string)(null)), table3, "Given ");
+#line 57
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 58
  testRunner.And("I Get all commits for the current Stream", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
-#line 53
- testRunner.Then("The first commit should have the same number of headers of the commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line 59
+ testRunner.Then("The first commit should have 3 headers", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();
         }
@@ -248,15 +262,17 @@ this.FeatureBackground();
         public virtual void SuccessfullCommitsShouldPersistAllTheEvents()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Successfull commits should persist all the events", ((string[])(null)));
-#line 55
+#line 61
 this.ScenarioSetup(scenarioInfo);
 #line 3
 this.FeatureBackground();
-#line 56
- testRunner.When("I Commit the commitAttempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
-#line 57
+#line 62
+ testRunner.Given("I Have 1 commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 63
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 64
  testRunner.And("I Get all commits for the current Stream", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
-#line 58
+#line 65
  testRunner.Then("The first commit should have the same number of events of the commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();
@@ -269,7 +285,7 @@ this.FeatureBackground();
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Successfull commits should add the commit to the set of undispatched commits", new string[] {
                         "ignore"});
-#line 61
+#line 68
 this.ScenarioSetup(scenarioInfo);
 #line 3
 this.FeatureBackground();
@@ -286,7 +302,7 @@ this.FeatureBackground();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Successfull commits should cause the stream to be found in the list of streams to" +
                     " snapshot", new string[] {
                         "ignore"});
-#line 63
+#line 70
 this.ScenarioSetup(scenarioInfo);
 #line 3
 this.FeatureBackground();
@@ -303,7 +319,7 @@ this.FeatureBackground();
         public virtual void TheICommitEnumerableShouldBeInTheCorrectOrder(string from, string to, string commitCount, string firstCommitId, string seccondCommitId, string[] exampleTags)
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("The ICommit Enumerable should be in the correct order", exampleTags);
-#line 65
+#line 72
 this.ScenarioSetup(scenarioInfo);
 #line 3
 this.FeatureBackground();
@@ -333,16 +349,16 @@ this.FeatureBackground();
                         "{39DBE31A-6520-4BE7-BC91-1D9831ED4B48}",
                         "{1F251B9C-C872-4032-A2ED-CC848150DB9E}",
                         "2"});
-#line 66
+#line 73
  testRunner.Given("I Have following commit attemps that was commited in this order", ((string)(null)), table4, "Given ");
-#line 72
+#line 79
  testRunner.When(string.Format("I Get all commits fro the Stream \"{{1F251B9C-C872-4032-A2ED-CC848150DB9E}}\" from " +
                         "revision {0} to revision {1}", from, to), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
-#line 73
+#line 80
  testRunner.Then(string.Format("There should be {0} commits", commitCount), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
-#line 74
+#line 81
  testRunner.Then(string.Format("The First Commit should have the CommitId \"{0}\"", firstCommitId), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
-#line 75
+#line 82
  testRunner.Then(string.Format("The Second Commit should have the CommitId \"{0}\"", seccondCommitId), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();
@@ -353,36 +369,59 @@ this.FeatureBackground();
         public virtual void TryingToCommitTheSameCommitAttemptShouldRaiseAConcurrencyException()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Trying to commit the same commit attempt should raise a ConcurrencyException", ((string[])(null)));
-#line 83
+#line 90
 this.ScenarioSetup(scenarioInfo);
 #line 3
 this.FeatureBackground();
-#line 84
- testRunner.When("I Commit the commitAttempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
-#line 85
- testRunner.And("I Commit the commitAttempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
-#line 86
+#line 91
+ testRunner.Given("I Have 1 commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 92
+ testRunner.Given("I Have the same commit attempt 2 times", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 93
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 94
  testRunner.Then("the current Exception should be of type \"NEventStore.ConcurrencyException\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();
         }
         
         [NUnit.Framework.TestAttribute()]
-        [NUnit.Framework.DescriptionAttribute("Trying to commit the different commits with the same commit sequence should raise" +
-            " a ConcurrencyException")]
-        public virtual void TryingToCommitTheDifferentCommitsWithTheSameCommitSequenceShouldRaiseAConcurrencyException()
+        [NUnit.Framework.DescriptionAttribute("Trying to commit different commits with the same expected version should raise a " +
+            "ConcurrencyException")]
+        public virtual void TryingToCommitDifferentCommitsWithTheSameExpectedVersionShouldRaiseAConcurrencyException()
         {
-            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Trying to commit the different commits with the same commit sequence should raise" +
-                    " a ConcurrencyException", ((string[])(null)));
-#line 88
+            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Trying to commit different commits with the same expected version should raise a " +
+                    "ConcurrencyException", ((string[])(null)));
+#line 98
 this.ScenarioSetup(scenarioInfo);
 #line 3
 this.FeatureBackground();
-#line 89
- testRunner.Given("I Have 2 commitAttemps with the same CommitSequence", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
-#line 90
+#line 99
+ testRunner.Given("I Have 2 commitAttemps with the same expected version", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 100
  testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
-#line 91
+#line 101
+ testRunner.Then("the current Exception should be of type \"NEventStore.ConcurrencyException\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line hidden
+            this.ScenarioCleanup();
+        }
+        
+        [NUnit.Framework.TestAttribute()]
+        [NUnit.Framework.DescriptionAttribute("Trying to commit different commits with the same commit sequence should raise a C" +
+            "oncurrencyException")]
+        public virtual void TryingToCommitDifferentCommitsWithTheSameCommitSequenceShouldRaiseAConcurrencyException()
+        {
+            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Trying to commit different commits with the same commit sequence should raise a C" +
+                    "oncurrencyException", ((string[])(null)));
+#line 103
+this.ScenarioSetup(scenarioInfo);
+#line 3
+this.FeatureBackground();
+#line 104
+ testRunner.Given("I Have 2 commitAttemps with the same CommitSequence", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 105
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 106
  testRunner.Then("the current Exception should be of type \"NEventStore.ConcurrencyException\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();

@@ -158,6 +158,7 @@ namespace NEventStore.Persistence.GES
 
         public void Initialize()
         {
+            ///TODO:Start listening for changes in the bucket stream after the initial load
             _connection.ActOnAll<BucketCreated>(NES_BUCKETS, evt => _buckets.Add(evt.Bucket), _serializer);
         }
 
@@ -197,7 +198,7 @@ namespace NEventStore.Persistence.GES
             {
                 Purge(bucket);
             }
-            _connection.DeleteStreamAsync(NES_BUCKETS, ExpectedVersion.Any);
+            _connection.DeleteStreamAsync(NES_BUCKETS, ExpectedVersion.Any).Wait();
         }
 
         public void Purge(string bucketId)
@@ -205,7 +206,7 @@ namespace NEventStore.Persistence.GES
             string streamId = CreateBucketStreamsStreamName(bucketId);
             _connection.ActOnAll<StreamCreated>(streamId,
                 evt => DeleteStream(evt.BucketId, evt.StreamId), _serializer);
-            _connection.DeleteStreamAsync(streamId, ExpectedVersion.Any);
+            _connection.DeleteStreamAsync(streamId, ExpectedVersion.Any).Wait();
         }
 
         public void Drop()

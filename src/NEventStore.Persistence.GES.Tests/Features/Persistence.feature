@@ -4,56 +4,63 @@ Background:
 	Given I have a PersistenceEngine
 	Given I have initiliazed the Engine
 	Given The PersistentStore is empty
-	Given I Have a commit attempt
-
-Scenario: Heades can have period in key
+	Given I Have defined a default bucket 
+	Given that i have defined a default stream
+	Given that i have a CommitAttemptGenerator
 	
-	Given I set the following headers in the commit attempt
+Scenario: Headers can have period in key
+	Given I Have 1 commit attempt with the following headers
 	| key   | value |
 	| key.1 | value |
-	When I Commit the commitAttempt
+	When I Commit all the commit attemps
 	And I Get all commits for the current Stream
 	Then the first commit should have the following headers
 	| key   | value |
 	| key.1 | value |
 
 Scenario: Successfull commits should persist the stream identifier
-	When I Commit the commitAttempt
+	Given I Have 1 commit attempt
+	When I Commit all the commit attemps
 	And I Get all commits for the current Stream
 	Then The first commit should have the same stream identifier of the commit attempt
 
 Scenario: Successfull commits should persist the stream revision
-	When I Commit the commitAttempt
+	Given I Have 1 commit attempt
+	When I Commit all the commit attemps
 	And I Get all commits for the current Stream
 	Then The first commit should have the same stream revision of the commit attempt
 
 Scenario: Successfull commits should persist the commit identifier
-	When I Commit the commitAttempt
+	Given I Have 1 commit attempt
+	When I Commit all the commit attemps
 	And I Get all commits for the current Stream
 	Then The first commit should have the same stream identifier of the commit attempt
 
 Scenario: Successfull commits should persist the commit sequence
-	When I Commit the commitAttempt
+	Given I Have 1 commit attempt
+	When I Commit all the commit attemps
 	And I Get all commits for the current Stream
 	Then The first commit should have the same commit sequence of the commit attempt
 
 Scenario: Successfull commits should persist the commit stamp
-	When I Commit the commitAttempt
+	Given I Have 1 commit attempt
+	When I Commit all the commit attemps
 	And I Get all commits for the current Stream
 	Then The first commit should have a commit stamp within 5 seconds of the commit attemp stamp
 
 Scenario: Successfull commits should persist all the commit attempt headers
-	Given I set the following headers in the commit attempt
+	Given I Have 1 commit attempt with the following headers
 	| key   | value  |
 	| key.1 | value  |
 	| key2  | value2 |
 	| key3  | value3 |
-	When I Commit the commitAttempt
+	When I Commit all the commit attemps
 	And I Get all commits for the current Stream
-	Then The first commit should have the same number of headers of the commit attempt
+	Then The first commit should have 3 headers 
 
 Scenario: Successfull commits should persist all the events
-	When I Commit the commitAttempt
+	Given I Have 1 commit attempt
+	When I Commit all the commit attemps
 	And I Get all commits for the current Stream
 	Then The first commit should have the same number of events of the commit attempt
 
@@ -81,11 +88,19 @@ Scenario Outline: The ICommit Enumerable should be in the correct order
 	| 7    | 7  | 1           | {39DBE31A-6520-4BE7-BC91-1D9831ED4B48} |                                        |
 	
 Scenario: Trying to commit the same commit attempt should raise a ConcurrencyException
-	When I Commit the commitAttempt
-	And I Commit the commitAttempt
+	Given I Have 1 commit attempt
+	Given I Have the same commit attempt 2 times
+	When I Commit all the commit attemps
+	Then the current Exception should be of type "NEventStore.ConcurrencyException" 
+	#event store only has the concurrency exception, so we are not going to try to query the stream to check if the same commit id already exists
+	#so we can't throw the DuplicateCommitException
+
+Scenario: Trying to commit different commits with the same expected version should raise a ConcurrencyException
+	Given I Have 2 commitAttemps with the same expected version
+	When I Commit all the commit attemps
 	Then the current Exception should be of type "NEventStore.ConcurrencyException"
 
-Scenario: Trying to commit the different commits with the same commit sequence should raise a ConcurrencyException
+Scenario: Trying to commit different commits with the same commit sequence should raise a ConcurrencyException
 	Given I Have 2 commitAttemps with the same CommitSequence
 	When I Commit all the commit attemps
 	Then the current Exception should be of type "NEventStore.ConcurrencyException"

@@ -17,8 +17,8 @@ namespace NEventStore.Persistence.GES.Extensions
         }
         public static int ExpectedCommitVersion(this CommitAttempt attempt)
         {
-            var expected = attempt.CommitSequence - 1;
-            if (expected == 0)
+            var expected = attempt.CommitSequence - 2;
+            if (expected == -1)
             {
                 return EventStore.ClientAPI.ExpectedVersion.NoStream;
             }
@@ -27,7 +27,7 @@ namespace NEventStore.Persistence.GES.Extensions
 
         public static EventData ToEventData(this CommitAttempt attempt,IEventStoreSerializer serializer)
         {
-            return new EventData(Guid.NewGuid(), typeof(CommitAttempt).FullName, serializer.IsJsonSerializer, serializer.Serialize(attempt),new byte[0]);
+            return new EventData(attempt.CommitId, typeof(CommitAttempt).FullName, serializer.IsJsonSerializer, serializer.Serialize(attempt),new byte[0]);
         }
         public static ICommit ToCommit(this CommitAttempt attempt,WriteResult result)
         {
