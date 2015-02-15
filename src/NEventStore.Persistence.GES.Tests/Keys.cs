@@ -1,4 +1,4 @@
-﻿namespace NEventStore.Persistence.GES.Tests
+﻿namespace NEventStore.Persistence.EventStore.Tests
 {
     public static class Keys
     {

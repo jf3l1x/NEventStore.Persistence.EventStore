@@ -1,26 +1,26 @@
 ﻿using System;
 using EventStore.ClientAPI;
-using NEventStore.Persistence.GES.Services;
+using NEventStore.Persistence.EventStore.Services;
 
-namespace NEventStore.Persistence.GES.Extensions
+namespace NEventStore.Persistence.EventStore.Extensions
 {
     public static class CommitAttemptExtensions
     {
-        public static string GetHashedStreamName(this CommitAttempt attempt)
+        public static string GetStreamName(this CommitAttempt attempt,IStreamNamingStrategy namingStrategy)
         {
-            return string.Format("NES.{0}.{1}", attempt.BucketId, attempt.StreamId).ToHashRepresentation();
+            return namingStrategy.CreateStreamName(attempt.BucketId, attempt.StreamId);
         }
-
-        public static string GetHashedCommitStreamName(this CommitAttempt attempt)
+        public static string CreateStreamCommitsName(this CommitAttempt attempt, IStreamNamingStrategy namingStrategy)
         {
-            return string.Format("NES.{0}.{1}.COMMITS", attempt.BucketId, attempt.StreamId).ToHashRepresentation();
+            return namingStrategy.CreateStreamCommitsName(attempt.BucketId, attempt.StreamId);
         }
+       
         public static int ExpectedCommitVersion(this CommitAttempt attempt)
         {
             var expected = attempt.CommitSequence - 2;
             if (expected == -1)
             {
-                return EventStore.ClientAPI.ExpectedVersion.NoStream;
+                return global::EventStore.ClientAPI.ExpectedVersion.NoStream;
             }
             return expected;
         }
@@ -52,7 +52,7 @@ namespace NEventStore.Persistence.GES.Extensions
             var expected= attempt.StreamRevision - attempt.Events.Count-1;
             if (expected == -1)
             {
-                return EventStore.ClientAPI.ExpectedVersion.NoStream;
+                return global::EventStore.ClientAPI.ExpectedVersion.NoStream;
             }
             return expected;
         }

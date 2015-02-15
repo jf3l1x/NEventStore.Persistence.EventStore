@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace NEventStore.Persistence.GES.Services
+namespace NEventStore.Persistence.EventStore.Services
 {
     public class CustomKeyValuePairConverter : JsonConverter
     {
