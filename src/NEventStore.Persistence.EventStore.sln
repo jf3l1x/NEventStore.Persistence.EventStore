@@ -5,7 +5,7 @@ VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NEventStore.Persistence.EventStore", "NEventStore.Persistence.EventStore\NEventStore.Persistence.EventStore.csproj", "{BC46C7C9-439C-4D9D-9D5F-3C603B7E9238}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NEventStore.Persistence.EventStore.Tests", "NEventStore.Persistence.GES.Tests\NEventStore.Persistence.EventStore.Tests.csproj", "{F86CF96E-7BF7-47F5-9747-6C84AA0734C5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NEventStore.Persistence.EventStore.Tests", "NEventStore.Persistence.EventStore.Tests\NEventStore.Persistence.EventStore.Tests.csproj", "{F86CF96E-7BF7-47F5-9747-6C84AA0734C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
