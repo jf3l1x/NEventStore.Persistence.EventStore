@@ -1,4 +1,4 @@
-﻿namespace NEventStore.Persistence.GES
+﻿namespace NEventStore.Persistence.EventStore
 {
     public static class Headers
     {

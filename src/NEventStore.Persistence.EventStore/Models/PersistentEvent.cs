@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using EventStore.ClientAPI;
-using NEventStore.Persistence.GES.Services;
+using NEventStore.Persistence.EventStore.Services;
 
-namespace NEventStore.Persistence.GES.Models
+namespace NEventStore.Persistence.EventStore.Models
 {
     public class PersistentEvent
     {

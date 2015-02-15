@@ -1,9 +1,8 @@
 ﻿using System;
 using EventStore.ClientAPI;
-using NEventStore.Persistence.GES.Services;
-using NEventStore.Serialization;
+using NEventStore.Persistence.EventStore.Services;
 
-namespace NEventStore.Persistence.GES.Extensions
+namespace NEventStore.Persistence.EventStore.Extensions
 {
     public static class EventStoreConnectionExtensions
     {

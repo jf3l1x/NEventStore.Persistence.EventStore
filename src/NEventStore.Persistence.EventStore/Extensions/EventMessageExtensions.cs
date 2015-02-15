@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using EventStore.ClientAPI;
-using NEventStore.Persistence.GES.Events;
-using NEventStore.Persistence.GES.Services;
-using NEventStore.Serialization;
+﻿using EventStore.ClientAPI;
+using NEventStore.Persistence.EventStore.Events;
+using NEventStore.Persistence.EventStore.Services;
 
-namespace NEventStore.Persistence.GES.Extensions
+namespace NEventStore.Persistence.EventStore.Extensions
 {
     public static class EventMessageExtensions
     {

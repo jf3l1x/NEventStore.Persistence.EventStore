@@ -1,6 +1,9 @@
 ﻿Feature: Persistence
 
 Background: 
+	Given i have the following options
+	| WritePageSize | ReadPageSize |
+	| 50            | 50           |
 	Given I have a PersistenceEngine
 	Given I have initiliazed the Engine
 	Given The PersistentStore is empty
@@ -104,6 +107,25 @@ Scenario: Trying to commit different commits with the same commit sequence shoul
 	Given I Have 2 commitAttemps with the same CommitSequence
 	When I Commit all the commit attemps
 	Then the current Exception should be of type "NEventStore.ConcurrencyException"
+
+Scenario: Commits with more events then WritePageSize should be correctly persisted
+	Given I Have following commit attemps that was commited in this order
+         | Order | CommitId | StreamId | EventCount |
+         | 1     |          |          | 100        |
+		 | 2     |          |          | 100        |
+	When I Commit all the commit attemps
+	And I Get all commits for the current Stream
+	Then There should be 2 commits
+	And The Should be 200 Events in the commits
+
+Scenario: Save a snapshot
+	Given I Have 1 commit attempt
+	Given I Have 1 snapshot
+	When I Commit all the commit attemps
+	And I Add all snapshots
+	And I Ask for the snapshot for the current StreamRevision
+	Then the returned snapshot should not be null
+
 
 
 	

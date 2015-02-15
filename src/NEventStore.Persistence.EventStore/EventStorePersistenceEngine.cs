@@ -4,22 +4,21 @@ using System.Linq;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using NEventStore.Logging;
-using NEventStore.Persistence.GES.Events;
-using NEventStore.Persistence.GES.Extensions;
-using NEventStore.Persistence.GES.Models;
-using NEventStore.Persistence.GES.Services;
+using NEventStore.Persistence.EventStore.Events;
+using NEventStore.Persistence.EventStore.Extensions;
+using NEventStore.Persistence.EventStore.Models;
+using NEventStore.Persistence.EventStore.Services;
 
-namespace NEventStore.Persistence.GES
+namespace NEventStore.Persistence.EventStore
 {
-    public class GESPersistenceEngine : IPersistStreams
+    public class EventStorePersistenceEngine : IPersistStreams
     {
-        private const string NES_BUCKETS = "NES.BUCKETS";
         private readonly List<string> _buckets;
         private readonly IEventStoreConnection _connection;
         private readonly IEventStoreSerializer _serializer;
-        private const int WritePageSize = 500;
-        private const int ReadPageSize = 500;
-
+        private readonly IStreamNamingStrategy _namingStrategy;
+        private readonly EventStorePersistenceOptions _options;
+        
         private class VersionRange
         {
 
@@ -44,10 +43,12 @@ namespace NEventStore.Persistence.GES
         }
         private bool _disposed;
         
-        public GESPersistenceEngine(IEventStoreConnection connection, IEventStoreSerializer serializer)
+        public EventStorePersistenceEngine(IEventStoreConnection connection, IEventStoreSerializer serializer,IStreamNamingStrategy namingStrategy,EventStorePersistenceOptions options)
         {
             _connection = connection;
             _serializer = serializer;
+            _namingStrategy = namingStrategy;
+            _options = options;
 
             _buckets = new List<string>();
         }
@@ -60,7 +61,7 @@ namespace NEventStore.Persistence.GES
         public IEnumerable<ICommit> GetFrom(string bucketId, string streamId, int minRevision, int maxRevision)
         {
             var range = new VersionRange(minRevision, maxRevision);
-            StreamEventsSlice slice = _connection.ReadStreamEventsForwardAsync(HashStreamName(bucketId, streamId),
+            StreamEventsSlice slice = _connection.ReadStreamEventsForwardAsync(_namingStrategy.CreateStreamName(bucketId, streamId),
                 range.MinVersion, range.EventCount, true).Result;
             PersistentEvent[] events = slice.Events.Select(evt =>
                 new PersistentEvent(evt, _serializer)).ToArray();
@@ -79,7 +80,7 @@ namespace NEventStore.Persistence.GES
 
         public ICommit Commit(CommitAttempt attempt)
         {
-            string streamId = attempt.GetHashedStreamName();
+            string streamId = attempt.GetStreamName(_namingStrategy);
             EventStoreTransaction transaction=null;
             try
             {
@@ -100,9 +101,9 @@ namespace NEventStore.Persistence.GES
                 var position = 0;
                 while (position < eventsToSave.Length)
                 {
-                    var pageEvents = eventsToSave.Skip(position).Take(WritePageSize);
+                    var pageEvents = eventsToSave.Skip(position).Take(_options.WritePageSize);
                     transaction.WriteAsync(pageEvents).Wait();
-                    position += WritePageSize;
+                    position += _options.WritePageSize;
                 }
                 WriteCommit(attempt);
                 return attempt.ToCommit(transaction.CommitAsync().Result);
@@ -137,18 +138,40 @@ namespace NEventStore.Persistence.GES
 
         private void WriteCommit(CommitAttempt attempt)
         {
-            _connection.AppendToStreamAsync(attempt.GetHashedCommitStreamName(), attempt.ExpectedCommitVersion(),
+            _connection.AppendToStreamAsync(attempt.CreateStreamCommitsName(_namingStrategy), attempt.ExpectedCommitVersion(),
                 attempt.ToEventData(_serializer)).Wait();
         }
 
         public ISnapshot GetSnapshot(string bucketId, string streamId, int maxRevision)
         {
-            throw new NotImplementedException();
+            StreamEventsSlice currentSlice;
+            var nextSliceStart = StreamPosition.End;
+            do
+            {
+                currentSlice =
+                _connection.ReadStreamEventsBackwardAsync(_namingStrategy.CreateStreamSnapshotsName(bucketId,streamId), nextSliceStart,
+                                                              _options.ReadPageSize,true)
+                                                              .Result;
+                foreach (var resolvedEvent in currentSlice.Events)
+                {
+                    var snapShot = resolvedEvent.Event.ToSnapshot(_serializer);
+                    if (snapShot.StreamRevision <= maxRevision)
+                        return snapShot;
+                }
+
+                
+                nextSliceStart = currentSlice.NextEventNumber;
+            } while (!currentSlice.IsEndOfStream);
+            return null;
+
         }
 
         public bool AddSnapshot(ISnapshot snapshot)
         {
-            throw new NotImplementedException();
+            _connection.AppendToStreamAsync(snapshot.GetStreamName(_namingStrategy), ExpectedVersion.Any,
+                snapshot.ToEventData(_serializer)).Wait();
+            return true;
+
         }
 
         public IEnumerable<IStreamHead> GetStreamsToSnapshot(string bucketId, int maxThreshold)
@@ -159,7 +182,7 @@ namespace NEventStore.Persistence.GES
         public void Initialize()
         {
             ///TODO:Start listening for changes in the bucket stream after the initial load
-            _connection.ActOnAll<BucketCreated>(NES_BUCKETS, evt => _buckets.Add(evt.Bucket), _serializer);
+            _connection.ActOnAll<BucketCreated>(_namingStrategy.BucketsStreamName, evt => _buckets.Add(evt.Bucket), _serializer);
         }
 
         public IEnumerable<ICommit> GetFrom(string bucketId, DateTime start)
@@ -198,12 +221,12 @@ namespace NEventStore.Persistence.GES
             {
                 Purge(bucket);
             }
-            _connection.DeleteStreamAsync(NES_BUCKETS, ExpectedVersion.Any).Wait();
+            _connection.DeleteStreamAsync(_namingStrategy.BucketsStreamName, ExpectedVersion.Any).Wait();
         }
 
         public void Purge(string bucketId)
         {
-            string streamId = CreateBucketStreamsStreamName(bucketId);
+            string streamId = _namingStrategy.CreateBucketStreamsStreamName(bucketId);
             _connection.ActOnAll<StreamCreated>(streamId,
                 evt => DeleteStream(evt.BucketId, evt.StreamId), _serializer);
             _connection.DeleteStreamAsync(streamId, ExpectedVersion.Any).Wait();
@@ -216,7 +239,7 @@ namespace NEventStore.Persistence.GES
 
         public void DeleteStream(string bucketId, string streamId)
         {
-            _connection.DeleteStreamAsync(HashStreamName(bucketId, streamId), ExpectedVersion.Any).Wait();
+            _connection.DeleteStreamAsync(_namingStrategy.CreateStreamName(bucketId, streamId), ExpectedVersion.Any).Wait();
         }
 
         public bool IsDisposed
@@ -228,26 +251,18 @@ namespace NEventStore.Persistence.GES
 
         private void AddStream(string bucketId, string streamId)
         {
-            _connection.AppendToStreamAsync(CreateBucketStreamsStreamName(bucketId), ExpectedVersion.Any,
+            _connection.AppendToStreamAsync(_namingStrategy.CreateBucketStreamsStreamName(bucketId), ExpectedVersion.Any,
                 new StreamCreated {BucketId = bucketId, StreamId = streamId}.ToEventData(_serializer)).Wait();
         }
 
         private void AddBucket(string bucketId)
         {
             _buckets.Add(bucketId);
-            _connection.AppendToStreamAsync(NES_BUCKETS, ExpectedVersion.Any,
+            _connection.AppendToStreamAsync(_namingStrategy.BucketsStreamName, ExpectedVersion.Any,
                 new BucketCreated {Bucket = bucketId}.ToEventData(_serializer)).Wait();
 
         }
 
-        private string CreateBucketStreamsStreamName(string bucketId)
-        {
-            return string.Format("NES.{0}.STREAMS", bucketId).ToHashRepresentation();
-        }
-
-        private string HashStreamName(string bucketId, string streamId)
-        {
-            return string.Format("NES.{0}.{1}", bucketId, streamId).ToHashRepresentation();
-        }
+       
     }
 }

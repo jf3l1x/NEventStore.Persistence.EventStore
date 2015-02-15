@@ -1,7 +1,7 @@
 ﻿using System;
 using TechTalk.SpecFlow;
 
-namespace NEventStore.Persistence.GES.Tests.Extensions
+namespace NEventStore.Persistence.EventStore.Tests.Extensions
 {
     internal static class ScenarioContextExtensions
     {

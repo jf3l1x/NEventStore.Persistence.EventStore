@@ -7,8 +7,8 @@
     <ProjectGuid>{F86CF96E-7BF7-47F5-9747-6C84AA0734C5}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NEventStore.Persistence.GES.Tests</RootNamespace>
-    <AssemblyName>NEventStore.Persistence.GES.Tests</AssemblyName>
+    <RootNamespace>NEventStore.Persistence.EventStore.Tests</RootNamespace>
+    <AssemblyName>NEventStore.Persistence.EventSotre.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -79,9 +79,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NEventStore.Persistence.EventStore\NEventStore.Persistence.GES.csproj">
+    <ProjectReference Include="..\NEventStore.Persistence.EventStore\NEventStore.Persistence.EventStore.csproj">
       <Project>{bc46c7c9-439c-4d9d-9d5f-3c603b7e9238}</Project>
-      <Name>NEventStore.Persistence.GES</Name>
+      <Name>NEventStore.Persistence.EventStore</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

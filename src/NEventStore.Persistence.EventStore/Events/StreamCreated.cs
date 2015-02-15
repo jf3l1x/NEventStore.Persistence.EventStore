@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace NEventStore.Persistence.GES.Events
+﻿namespace NEventStore.Persistence.EventStore.Events
 {
     public class StreamCreated:EventBase
     {
