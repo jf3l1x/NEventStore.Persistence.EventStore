@@ -48,7 +48,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EventStorePersistenceFactory.cs" />
     <Compile Include="EventStorePersistenceOptions.cs" />
+    <Compile Include="EventStorePersistenceWireup.cs" />
+    <Compile Include="EventStorePersistenceWireupExtensions.cs" />
     <Compile Include="Events\SnapshotThresholdReached.cs" />
     <Compile Include="Extensions\SnapShotExtensions.cs" />
     <Compile Include="Extensions\StreamMetadataExtensions.cs" />
