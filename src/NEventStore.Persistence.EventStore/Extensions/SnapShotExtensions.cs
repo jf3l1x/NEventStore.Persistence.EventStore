@@ -8,7 +8,7 @@ namespace NEventStore.Persistence.EventStore.Extensions
     {
         public static string GetStreamName(this ISnapshot snapshot,IStreamNamingStrategy strategy)
         {
-            return strategy.CreateStreamSnapshotsName(snapshot.BucketId, snapshot.StreamId);
+            return strategy.CreateStreamSnapshots(snapshot.BucketId, snapshot.StreamId);
         }
         public static EventData ToEventData(this ISnapshot snapshot, IEventStoreSerializer serializer)
         {

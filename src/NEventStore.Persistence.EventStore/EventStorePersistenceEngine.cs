@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
@@ -49,7 +50,7 @@ namespace NEventStore.Persistence.EventStore
             _serializer = serializer;
             _namingStrategy = namingStrategy;
             _options = options;
-
+            
             _buckets = new List<string>();
         }
 
@@ -61,7 +62,7 @@ namespace NEventStore.Persistence.EventStore
         public IEnumerable<ICommit> GetFrom(string bucketId, string streamId, int minRevision, int maxRevision)
         {
             var range = new VersionRange(minRevision, maxRevision);
-            StreamEventsSlice slice = _connection.ReadStreamEventsForwardAsync(_namingStrategy.CreateStreamName(bucketId, streamId),
+            StreamEventsSlice slice = _connection.ReadStreamEventsForwardAsync(_namingStrategy.CreateStream(bucketId, streamId),
                 range.MinVersion, range.EventCount, true).Result;
             PersistentEvent[] events = slice.Events.Select(evt =>
                 new PersistentEvent(evt, _serializer)).ToArray();
@@ -84,6 +85,7 @@ namespace NEventStore.Persistence.EventStore
             EventStoreTransaction transaction=null;
             try
             {
+                
                 if (!_buckets.Contains(attempt.BucketId))
                 {
                     AddBucket(attempt.BucketId);
@@ -96,8 +98,10 @@ namespace NEventStore.Persistence.EventStore
                 var eventsToSave =
                        attempt.Events.Select(evt => new PersistentEvent(evt, attempt).ToEventData(_serializer)).ToArray();
 
+                //The reason to write the events directly and not the commits is to maintain the event type intact in the event store
+                //This can facilitate the writing of projections and listeners do not need to know anything about neventstore
                 transaction = _connection.StartTransactionAsync(streamId, attempt.ExpectedVersion()).Result;
-
+                
                 var position = 0;
                 while (position < eventsToSave.Length)
                 {
@@ -105,8 +109,14 @@ namespace NEventStore.Persistence.EventStore
                     transaction.WriteAsync(pageEvents).Wait();
                     position += _options.WritePageSize;
                 }
+                ///TODO:Solve this issue
+                //The Commit stream is only being used to ensure that no commit is duplicated, but since there`s no interstream transaction support in GES this can be risk.
+                //If for some reason the commit is writted and the events are not there`ll be a lock and no futher event will be written
                 WriteCommit(attempt);
-                return attempt.ToCommit(transaction.CommitAsync().Result);
+                CheckSnapshotThreshold(attempt);
+                var result = transaction.CommitAsync().Result;
+             
+                return attempt.ToCommit(result);
             }
             catch (AggregateException ex)
             {
@@ -136,6 +146,26 @@ namespace NEventStore.Persistence.EventStore
             
         }
 
+        private void CheckSnapshotThreshold(CommitAttempt attempt)
+        {
+            if (attempt.StreamRevision > _options.MinimunSnapshotThreshold)
+            {
+                var isSnapShotCandidate = false;
+                var metadata = _connection.GetStreamMetadataAsync(attempt.GetStreamName(_namingStrategy))
+                    .Result.StreamMetadata;
+                metadata.TryGetValue(MetadataKeys.IsSnapShotCandidate, out isSnapShotCandidate);
+                if (!isSnapShotCandidate)
+                {
+                    var newData = metadata.Clone().SetCustomProperty(MetadataKeys.IsSnapShotCandidate, true).Build();
+                    _connection.SetStreamMetadataAsync(attempt.GetStreamName(_namingStrategy), ExpectedVersion.Any,
+                        newData).Wait();
+                    _connection.AppendToStreamAsync(_namingStrategy.CreateStreamsToSnapshot(attempt.BucketId),ExpectedVersion.Any,
+                        new SnapshotThresholdReached() {StreamId = attempt.StreamId}.ToEventData(_serializer)).Wait();
+                }
+
+            }
+        }
+
         private void WriteCommit(CommitAttempt attempt)
         {
             _connection.AppendToStreamAsync(attempt.CreateStreamCommitsName(_namingStrategy), attempt.ExpectedCommitVersion(),
@@ -149,7 +179,7 @@ namespace NEventStore.Persistence.EventStore
             do
             {
                 currentSlice =
-                _connection.ReadStreamEventsBackwardAsync(_namingStrategy.CreateStreamSnapshotsName(bucketId,streamId), nextSliceStart,
+                _connection.ReadStreamEventsBackwardAsync(_namingStrategy.CreateStreamSnapshots(bucketId,streamId), nextSliceStart,
                                                               _options.ReadPageSize,true)
                                                               .Result;
                 foreach (var resolvedEvent in currentSlice.Events)
@@ -171,18 +201,58 @@ namespace NEventStore.Persistence.EventStore
             _connection.AppendToStreamAsync(snapshot.GetStreamName(_namingStrategy), ExpectedVersion.Any,
                 snapshot.ToEventData(_serializer)).Wait();
             return true;
+            
+            
 
         }
-
+        /// <summary>
+        /// This is a very slow operation, use with caution
+        /// </summary>
+        /// <param name="bucketId"></param>
+        /// <param name="maxThreshold"></param>
+        /// <returns></returns>
         public IEnumerable<IStreamHead> GetStreamsToSnapshot(string bucketId, int maxThreshold)
         {
-            throw new NotImplementedException();
+            
+            var retval = new List<IStreamHead>();
+            StreamEventsSlice currentSlice;
+            var nextSliceStart = StreamPosition.Start;
+            do
+            {
+                currentSlice =
+                    _connection.ReadStreamEventsForwardAsync(_namingStrategy.CreateStreamsToSnapshot(bucketId),
+                        nextSliceStart, _options.ReadPageSize, true).Result;
+                foreach (var resolvedEvent in currentSlice.Events)
+                {
+                    var evt = _serializer.Deserialize<SnapshotThresholdReached>(resolvedEvent.Event.Data);
+                    var headRevision =
+                        _connection.ReadStreamEventsBackwardAsync(_namingStrategy.CreateStream(bucketId, evt.StreamId),
+                            StreamPosition.End, 1, true).Result.LastEventNumber + 1;
+                    var lastSnapShots =
+                        _connection.ReadStreamEventsBackwardAsync(
+                            _namingStrategy.CreateStreamSnapshots(bucketId, evt.StreamId), StreamPosition.End, 1, true).Result;
+                    var snapshotRevision = 0;
+                    if (lastSnapShots.LastEventNumber >= 0)
+                    {
+                        var snapShot = lastSnapShots.Events.FirstOrDefault().Event.ToSnapshot(_serializer);
+                        snapshotRevision = snapShot.StreamRevision;
+                    }
+                    if (headRevision - snapshotRevision  > _options.MinimunSnapshotThreshold)
+                    {
+                        retval.Add(new StreamHead(bucketId, evt.StreamId, headRevision, snapshotRevision));    
+                    }
+                    
+
+                }
+                nextSliceStart = currentSlice.NextEventNumber;
+            } while (!currentSlice.IsEndOfStream);
+            return retval;
         }
 
         public void Initialize()
         {
             ///TODO:Start listening for changes in the bucket stream after the initial load
-            _connection.ActOnAll<BucketCreated>(_namingStrategy.BucketsStreamName, evt => _buckets.Add(evt.Bucket), _serializer);
+            _connection.ActOnAll<BucketCreated>(_namingStrategy.BucketsStream, evt => _buckets.Add(evt.Bucket), _serializer);
         }
 
         public IEnumerable<ICommit> GetFrom(string bucketId, DateTime start)
@@ -221,15 +291,16 @@ namespace NEventStore.Persistence.EventStore
             {
                 Purge(bucket);
             }
-            _connection.DeleteStreamAsync(_namingStrategy.BucketsStreamName, ExpectedVersion.Any).Wait();
+            _connection.DeleteStreamAsync(_namingStrategy.BucketsStream, ExpectedVersion.Any).Wait();
         }
 
         public void Purge(string bucketId)
         {
-            string streamId = _namingStrategy.CreateBucketStreamsStreamName(bucketId);
+            string streamId = _namingStrategy.CreateBucketStreamsStream(bucketId);
             _connection.ActOnAll<StreamCreated>(streamId,
                 evt => DeleteStream(evt.BucketId, evt.StreamId), _serializer);
             _connection.DeleteStreamAsync(streamId, ExpectedVersion.Any).Wait();
+            _connection.DeleteStreamAsync(_namingStrategy.CreateStreamsToSnapshot(bucketId), ExpectedVersion.Any).Wait();
         }
 
         public void Drop()
@@ -239,7 +310,9 @@ namespace NEventStore.Persistence.EventStore
 
         public void DeleteStream(string bucketId, string streamId)
         {
-            _connection.DeleteStreamAsync(_namingStrategy.CreateStreamName(bucketId, streamId), ExpectedVersion.Any).Wait();
+            _connection.DeleteStreamAsync(_namingStrategy.CreateStream(bucketId, streamId), ExpectedVersion.Any).Wait();
+            _connection.DeleteStreamAsync(_namingStrategy.CreateStreamCommits(bucketId, streamId), ExpectedVersion.Any).Wait();
+            _connection.DeleteStreamAsync(_namingStrategy.CreateStreamSnapshots(bucketId, streamId), ExpectedVersion.Any).Wait();
         }
 
         public bool IsDisposed
@@ -251,14 +324,14 @@ namespace NEventStore.Persistence.EventStore
 
         private void AddStream(string bucketId, string streamId)
         {
-            _connection.AppendToStreamAsync(_namingStrategy.CreateBucketStreamsStreamName(bucketId), ExpectedVersion.Any,
+            _connection.AppendToStreamAsync(_namingStrategy.CreateBucketStreamsStream(bucketId), ExpectedVersion.Any,
                 new StreamCreated {BucketId = bucketId, StreamId = streamId}.ToEventData(_serializer)).Wait();
         }
 
         private void AddBucket(string bucketId)
         {
             _buckets.Add(bucketId);
-            _connection.AppendToStreamAsync(_namingStrategy.BucketsStreamName, ExpectedVersion.Any,
+            _connection.AppendToStreamAsync(_namingStrategy.BucketsStream, ExpectedVersion.Any,
                 new BucketCreated {Bucket = bucketId}.ToEventData(_serializer)).Wait();
 
         }

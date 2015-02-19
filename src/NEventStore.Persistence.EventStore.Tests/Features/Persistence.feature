@@ -2,8 +2,8 @@
 
 Background: 
 	Given i have the following options
-	| WritePageSize | ReadPageSize |
-	| 50            | 50           |
+	| WritePageSize | ReadPageSize | MinimunSnapshotThreshold |
+	| 50            | 50           | 1                        |
 	Given I have a PersistenceEngine
 	Given I have initiliazed the Engine
 	Given The PersistentStore is empty
@@ -126,9 +126,41 @@ Scenario: Save a snapshot
 	And I Ask for the snapshot for the current StreamRevision
 	Then the returned snapshot should not be null
 
+Scenario: Retrieving a snapshot
+	Given I Have following commit attemps that was commited in this order
+         | Order | CommitId | StreamId | EventCount |
+         | 1     |          |          | 2          |
+         | 2     |          |          | 2          |
+         | 3     |          |          | 2          |
+	Given I Have snapshots for the folowing revisions
+	| Revision |
+	| 1        |
+	| 3        |
+	| 5        |
+	When I Commit all the commit attemps
+	And I Add all snapshots
+	And I Ask for the snapshot for the Revision 4
+	Then the returned snapshot should not be null
+	And the returned snapshot should be for the revision 3
 
+Scenario: Retrieving a list of streams to snapshot should consider if there's more then the MinimunSnapshotThreshold
+	Given I Have 2 commit attempt
+	When I Commit all the commit attemps
+	And I Ask for the list of streams to snapshot with a threshold of 1
+	Then The number of streamHeads returned should be 1
+	And the streamHeads mus contain the current stream Id
 
+Scenario: Retrieving a list of streams to snapshot should not consider if the number of events is equals to the MinimunSnapshotThreshold
+	Given I Have 1 commit attempt
+	When I Commit all the commit attemps
+	And I Ask for the list of streams to snapshot with a threshold of 1
+	Then The number of streamHeads returned should be 0
+
+Scenario: When a snapshot has been added to the most recent commit of a stream
+	Given I Have 2 commit attempt
+	And I Have 1 snapshot
+	When I Commit all the commit attemps
+	And I Add all snapshots
+	And I Ask for the list of streams to snapshot with a threshold of 1
+	Then The number of streamHeads returned should be 0
 	
-
-
-

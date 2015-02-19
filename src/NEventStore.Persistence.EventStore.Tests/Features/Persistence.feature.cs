@@ -70,10 +70,12 @@ namespace NEventStore.Persistence.EventStore.Tests.Features
 #line hidden
             TechTalk.SpecFlow.Table table1 = new TechTalk.SpecFlow.Table(new string[] {
                         "WritePageSize",
-                        "ReadPageSize"});
+                        "ReadPageSize",
+                        "MinimunSnapshotThreshold"});
             table1.AddRow(new string[] {
                         "50",
-                        "50"});
+                        "50",
+                        "1"});
 #line 4
  testRunner.Given("i have the following options", ((string)(null)), table1, "Given ");
 #line 7
@@ -496,6 +498,136 @@ this.FeatureBackground();
  testRunner.And("I Ask for the snapshot for the current StreamRevision", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line 127
  testRunner.Then("the returned snapshot should not be null", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line hidden
+            this.ScenarioCleanup();
+        }
+        
+        [NUnit.Framework.TestAttribute()]
+        [NUnit.Framework.DescriptionAttribute("Retrieving a snapshot")]
+        public virtual void RetrievingASnapshot()
+        {
+            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Retrieving a snapshot", ((string[])(null)));
+#line 129
+this.ScenarioSetup(scenarioInfo);
+#line 3
+this.FeatureBackground();
+#line hidden
+            TechTalk.SpecFlow.Table table7 = new TechTalk.SpecFlow.Table(new string[] {
+                        "Order",
+                        "CommitId",
+                        "StreamId",
+                        "EventCount"});
+            table7.AddRow(new string[] {
+                        "1",
+                        "",
+                        "",
+                        "2"});
+            table7.AddRow(new string[] {
+                        "2",
+                        "",
+                        "",
+                        "2"});
+            table7.AddRow(new string[] {
+                        "3",
+                        "",
+                        "",
+                        "2"});
+#line 130
+ testRunner.Given("I Have following commit attemps that was commited in this order", ((string)(null)), table7, "Given ");
+#line hidden
+            TechTalk.SpecFlow.Table table8 = new TechTalk.SpecFlow.Table(new string[] {
+                        "Revision"});
+            table8.AddRow(new string[] {
+                        "1"});
+            table8.AddRow(new string[] {
+                        "3"});
+            table8.AddRow(new string[] {
+                        "5"});
+#line 135
+ testRunner.Given("I Have snapshots for the folowing revisions", ((string)(null)), table8, "Given ");
+#line 140
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 141
+ testRunner.And("I Add all snapshots", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+#line 142
+ testRunner.And("I Ask for the snapshot for the Revision 4", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+#line 143
+ testRunner.Then("the returned snapshot should not be null", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line 144
+ testRunner.And("the returned snapshot should be for the revision 3", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+#line hidden
+            this.ScenarioCleanup();
+        }
+        
+        [NUnit.Framework.TestAttribute()]
+        [NUnit.Framework.DescriptionAttribute("Retrieving a list of streams to snapshot should consider if there\'s more then the" +
+            " MinimunSnapshotThreshold")]
+        public virtual void RetrievingAListOfStreamsToSnapshotShouldConsiderIfThereSMoreThenTheMinimunSnapshotThreshold()
+        {
+            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Retrieving a list of streams to snapshot should consider if there\'s more then the" +
+                    " MinimunSnapshotThreshold", ((string[])(null)));
+#line 146
+this.ScenarioSetup(scenarioInfo);
+#line 3
+this.FeatureBackground();
+#line 147
+ testRunner.Given("I Have 2 commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 148
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 149
+ testRunner.And("I Ask for the list of streams to snapshot with a threshold of 1", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+#line 150
+ testRunner.Then("The number of streamHeads returned should be 1", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line 151
+ testRunner.And("the streamHeads mus contain the current stream Id", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+#line hidden
+            this.ScenarioCleanup();
+        }
+        
+        [NUnit.Framework.TestAttribute()]
+        [NUnit.Framework.DescriptionAttribute("Retrieving a list of streams to snapshot should not consider if the number of eve" +
+            "nts is equals to the MinimunSnapshotThreshold")]
+        public virtual void RetrievingAListOfStreamsToSnapshotShouldNotConsiderIfTheNumberOfEventsIsEqualsToTheMinimunSnapshotThreshold()
+        {
+            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Retrieving a list of streams to snapshot should not consider if the number of eve" +
+                    "nts is equals to the MinimunSnapshotThreshold", ((string[])(null)));
+#line 153
+this.ScenarioSetup(scenarioInfo);
+#line 3
+this.FeatureBackground();
+#line 154
+ testRunner.Given("I Have 1 commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 155
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 156
+ testRunner.And("I Ask for the list of streams to snapshot with a threshold of 1", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+#line 157
+ testRunner.Then("The number of streamHeads returned should be 0", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line hidden
+            this.ScenarioCleanup();
+        }
+        
+        [NUnit.Framework.TestAttribute()]
+        [NUnit.Framework.DescriptionAttribute("When a snapshot has been added to the most recent commit of a stream")]
+        public virtual void WhenASnapshotHasBeenAddedToTheMostRecentCommitOfAStream()
+        {
+            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("When a snapshot has been added to the most recent commit of a stream", ((string[])(null)));
+#line 159
+this.ScenarioSetup(scenarioInfo);
+#line 3
+this.FeatureBackground();
+#line 160
+ testRunner.Given("I Have 2 commit attempt", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 161
+ testRunner.And("I Have 1 snapshot", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+#line 162
+ testRunner.When("I Commit all the commit attemps", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 163
+ testRunner.And("I Add all snapshots", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+#line 164
+ testRunner.And("I Ask for the list of streams to snapshot with a threshold of 1", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+#line 165
+ testRunner.Then("The number of streamHeads returned should be 0", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();
         }

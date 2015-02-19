@@ -8,11 +8,11 @@ namespace NEventStore.Persistence.EventStore.Extensions
     {
         public static string GetStreamName(this CommitAttempt attempt,IStreamNamingStrategy namingStrategy)
         {
-            return namingStrategy.CreateStreamName(attempt.BucketId, attempt.StreamId);
+            return namingStrategy.CreateStream(attempt.BucketId, attempt.StreamId);
         }
         public static string CreateStreamCommitsName(this CommitAttempt attempt, IStreamNamingStrategy namingStrategy)
         {
-            return namingStrategy.CreateStreamCommitsName(attempt.BucketId, attempt.StreamId);
+            return namingStrategy.CreateStreamCommits(attempt.BucketId, attempt.StreamId);
         }
        
         public static int ExpectedCommitVersion(this CommitAttempt attempt)

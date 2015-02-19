@@ -49,7 +49,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EventStorePersistenceOptions.cs" />
+    <Compile Include="Events\SnapshotThresholdReached.cs" />
     <Compile Include="Extensions\SnapShotExtensions.cs" />
+    <Compile Include="Extensions\StreamMetadataExtensions.cs" />
+    <Compile Include="MetadataKeys.cs" />
     <Compile Include="Models\PersistentEvent.cs" />
     <Compile Include="Events\BucketCreated.cs" />
     <Compile Include="Events\EventBase.cs" />

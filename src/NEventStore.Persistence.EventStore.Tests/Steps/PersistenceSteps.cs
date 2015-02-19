@@ -34,7 +34,8 @@ namespace NEventStore.Persistence.EventStore.Tests.Steps
             ScenarioContext.Current.Add(new EventStorePersistenceOptions
             {
                 WritePageSize = int.Parse(table.Rows[0]["WritePageSize"]),
-                ReadPageSize = int.Parse(table.Rows[0]["ReadPageSize"])
+                ReadPageSize = int.Parse(table.Rows[0]["ReadPageSize"]),
+                MinimunSnapshotThreshold = int.Parse(table.Rows[0]["MinimunSnapshotThreshold"])
             });
         }
 
@@ -285,6 +286,26 @@ namespace NEventStore.Persistence.EventStore.Tests.Steps
             ScenarioContext.Current.Add(Engine.GetSnapshot(BucketId.ToString("N"), StreamId.ToString("N"), Generator.StreamRevisionFor(StreamId)));
         }
 
+        [Given(@"I Have snapshots for the folowing revisions")]
+        public void GivenIHaveSnapshotsForTheFolowingRevisions(Table table)
+        {
+            var snapshots=table.Rows.Select(tr => new Snapshot(BucketId.ToString("N"),
+                StreamId.ToString("N"),
+                int.Parse(tr["Revision"]), "snapshot body")).ToList();
+           
+            ScenarioContext.Current.Add(snapshots.AsEnumerable());
+        }
+        [When(@"I Ask for the snapshot for the Revision (.*)")]
+        public void WhenIAskForTheSnapshotForTheRevision(int revision)
+        {
+            ScenarioContext.Current.Add(Engine.GetSnapshot(BucketId.ToString("N"), StreamId.ToString("N"), revision));
+        }
+
+        [Then(@"the returned snapshot should be for the revision (.*)")]
+        public void ThenTheReturnedSnapshotShouldBeForTheRevision(int revision)
+        {
+            ScenarioContext.Current.Get<ISnapshot>().StreamRevision.Should().Be(revision);
+        }
 
 
 
@@ -293,6 +314,27 @@ namespace NEventStore.Persistence.EventStore.Tests.Steps
         {
             ScenarioContext.Current.Get<ISnapshot>().Should().NotBeNull();
         }
+        [When(@"I Ask for the list of streams to snapshot with a threshold of (.*)")]
+        public void WhenIAskForTheListOfStreamsToSnapshotWithAThresholdOf(int threshold)
+        {
+            ScenarioContext.Current.Add(Engine.GetStreamsToSnapshot(BucketId.ToString("N"),threshold));
+        }
+
+        [Then(@"The number of streamHeads returned should be (.*)")]
+        public void ThenTheNumberOfStreamHeadsReturnedShouldBe(int count)
+        {
+            ScenarioContext.Current.Get<IEnumerable<IStreamHead>>().Count().Should().Be(count);
+        }
+
+        [Then(@"the streamHeads mus contain the current stream Id")]
+        public void ThenTheStreamHeadsMusContainTheCurrentStreamId()
+        {
+            ScenarioContext.Current.Get<IEnumerable<IStreamHead>>()
+                .Any(sh => sh.StreamId == StreamId.ToString("N"))
+                .Should()
+                .BeTrue();
+        }
+
 
 
         #region sugar
