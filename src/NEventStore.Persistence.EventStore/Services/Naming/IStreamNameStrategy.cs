@@ -1,4 +1,4 @@
-﻿namespace NEventStore.Persistence.EventStore.Services
+﻿namespace NEventStore.Persistence.EventStore.Services.Naming
 {
     public interface IStreamNamingStrategy
     {

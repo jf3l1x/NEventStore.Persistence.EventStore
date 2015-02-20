@@ -143,17 +143,24 @@ Scenario: Retrieving a snapshot
 	Then the returned snapshot should not be null
 	And the returned snapshot should be for the revision 3
 
-Scenario: Retrieving a list of streams to snapshot should consider if there's more then the MinimunSnapshotThreshold
+Scenario: Retrieving a list of streams to snapshot should consider if the threshold is greater then the MinimunSnapshotThreshold
 	Given I Have 2 commit attempt
 	When I Commit all the commit attemps
 	And I Ask for the list of streams to snapshot with a threshold of 1
 	Then The number of streamHeads returned should be 1
-	And the streamHeads mus contain the current stream Id
+	And the streamHeads must contain the current stream Id
 
-Scenario: Retrieving a list of streams to snapshot should not consider if the number of events is equals to the MinimunSnapshotThreshold
-	Given I Have 1 commit attempt
+Scenario: Retrieving a list of streams to snapshot should consider if the threshold is equals then the MinimunSnapshotThreshold
+	Given I Have 2 commit attempt
 	When I Commit all the commit attemps
-	And I Ask for the list of streams to snapshot with a threshold of 1
+	And I Ask for the list of streams to snapshot with a threshold of 2
+	Then The number of streamHeads returned should be 1
+	And the streamHeads must contain the current stream Id
+
+Scenario: Retrieving a list of streams to snapshot should not consider if the threshold is lesser then the MinimunSnapshotThreshold
+	Given I Have 2 commit attempt
+	When I Commit all the commit attemps
+	And I Ask for the list of streams to snapshot with a threshold of 3
 	Then The number of streamHeads returned should be 0
 
 Scenario: When a snapshot has been added to the most recent commit of a stream
@@ -163,4 +170,25 @@ Scenario: When a snapshot has been added to the most recent commit of a stream
 	And I Add all snapshots
 	And I Ask for the list of streams to snapshot with a threshold of 1
 	Then The number of streamHeads returned should be 0
+
+Scenario: When adding a commit after a snapshot
+	Given I Have 2 commit attempt
+	And I Have 1 snapshot
+	When I Commit all the commit attemps
+	And I Add all snapshots
+	And I Add 1 new commit attempts
+	And I Commit all the commit attemps
+	And I Ask for the list of streams to snapshot with a threshold of 1
+	Then The number of streamHeads returned should be 1
+
+Scenario: When adding a commit after a snapshot asking for overthreshold
+	Given I Have 2 commit attempt
+	And I Have 1 snapshot
+	When I Commit all the commit attemps
+	And I Add all snapshots
+	And I Add 1 new commit attempts
+	And I Commit all the commit attemps
+	And I Ask for the list of streams to snapshot with a threshold of 2
+	Then The number of streamHeads returned should be 0
+
 	

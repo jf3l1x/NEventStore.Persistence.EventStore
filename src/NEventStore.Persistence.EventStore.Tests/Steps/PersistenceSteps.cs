@@ -5,6 +5,7 @@ using System.Net;
 using EventStore.ClientAPI;
 using FluentAssertions;
 using NEventStore.Persistence.EventStore.Services;
+using NEventStore.Persistence.EventStore.Services.Naming;
 using NEventStore.Persistence.EventStore.Tests.Extensions;
 using TechTalk.SpecFlow;
 
@@ -25,7 +26,7 @@ namespace NEventStore.Persistence.EventStore.Tests.Steps
             IEventStoreConnection connection = EventStoreConnection.Create(new IPEndPoint(IPAddress.Loopback, 1113));
             connection.ConnectAsync().Wait();
             ScenarioContext.Current.Add(new EventStorePersistenceEngine(connection, new JsonNetSerializer(),new DefaultNamingStrategy(), 
-                ScenarioContext.Current.Get<EventStorePersistenceOptions>()));
+                ScenarioContext.Current.Get<EventStorePersistenceOptions>(),false));
         }
 
         [Given(@"i have the following options")]
@@ -326,13 +327,18 @@ namespace NEventStore.Persistence.EventStore.Tests.Steps
             ScenarioContext.Current.Get<IEnumerable<IStreamHead>>().Count().Should().Be(count);
         }
 
-        [Then(@"the streamHeads mus contain the current stream Id")]
-        public void ThenTheStreamHeadsMusContainTheCurrentStreamId()
+        [Then(@"the streamHeads must contain the current stream Id")]
+        public void ThenTheStreamHeadsMustContainTheCurrentStreamId()
         {
             ScenarioContext.Current.Get<IEnumerable<IStreamHead>>()
                 .Any(sh => sh.StreamId == StreamId.ToString("N"))
                 .Should()
                 .BeTrue();
+        }
+        [When(@"I Add (.*) new commit attempts")]
+        public void WhenIAddNewCommitAttempts(int count)
+        {
+            Generator.AddInfo(count);
         }
 
 
@@ -383,16 +389,14 @@ namespace NEventStore.Persistence.EventStore.Tests.Steps
 
             public IEnumerable<EventMessage> GenerateEvents()
             {
-                var events = new List<EventMessage>();
                 for (int i = 0; i < EventCount; i++)
                 {
-                    events.Add(new EventMessage
+                    yield return new EventMessage
                     {
                         Body = "test" + i,
                         Headers = new Dictionary<string, object>()
-                    });
+                    };
                 }
-                return events;
             }
         }
 

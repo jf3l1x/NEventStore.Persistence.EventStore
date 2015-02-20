@@ -9,16 +9,20 @@ using NEventStore.Persistence.EventStore.Events;
 using NEventStore.Persistence.EventStore.Extensions;
 using NEventStore.Persistence.EventStore.Models;
 using NEventStore.Persistence.EventStore.Services;
+using NEventStore.Persistence.EventStore.Services.Control;
+using NEventStore.Persistence.EventStore.Services.Naming;
 
 namespace NEventStore.Persistence.EventStore
 {
     public class EventStorePersistenceEngine : IPersistStreams
     {
-        private readonly List<string> _buckets;
+        private static readonly ILog Logger = LogFactory.BuildLogger(typeof(EventStorePersistenceEngine));
+        
         private readonly IEventStoreConnection _connection;
         private readonly IEventStoreSerializer _serializer;
         private readonly IStreamNamingStrategy _namingStrategy;
         private readonly EventStorePersistenceOptions _options;
+        private readonly IControlStrategy _controlStrategy;
         
         private class VersionRange
         {
@@ -44,16 +48,29 @@ namespace NEventStore.Persistence.EventStore
         }
         private bool _disposed;
         
-        public EventStorePersistenceEngine(IEventStoreConnection connection, IEventStoreSerializer serializer,IStreamNamingStrategy namingStrategy,EventStorePersistenceOptions options)
+        public EventStorePersistenceEngine(IEventStoreConnection connection, IEventStoreSerializer serializer,IStreamNamingStrategy namingStrategy,EventStorePersistenceOptions options,bool useProjections)
         {
             _connection = connection;
             _serializer = serializer;
-            _namingStrategy = namingStrategy;
             _options = options;
-            
-            _buckets = new List<string>();
-        }
+            if (useProjections )
+            {
+                if (namingStrategy != null)
+                {
+                    Logger.Warn("Ignoring naming strategy because it`s not supported wehn using projections");
+                }
+                _namingStrategy = new DefaultNamingStrategy();
+                _controlStrategy = new UseProjectionsStrategy(_options);
+            }
+            else
+            {
+                _namingStrategy = namingStrategy;
+                _controlStrategy = new NoProjectionStrategy(_connection, _options,namingStrategy,serializer);
+            }
 
+            
+        }
+       
         public void Dispose()
         {
             _disposed = true;
@@ -86,20 +103,14 @@ namespace NEventStore.Persistence.EventStore
             try
             {
                 
-                if (!_buckets.Contains(attempt.BucketId))
-                {
-                    AddBucket(attempt.BucketId);
-                }
-                if (attempt.ExpectedVersion() == ExpectedVersion.NoStream)
-                {
-                    AddStream(attempt.BucketId, attempt.StreamId);
-                }
+                _controlStrategy.PreProcessCommitAttempt(attempt);
                 
                 var eventsToSave =
                        attempt.Events.Select(evt => new PersistentEvent(evt, attempt).ToEventData(_serializer)).ToArray();
 
                 //The reason to write the events directly and not the commits is to maintain the event type intact in the event store
                 //This can facilitate the writing of projections and listeners do not need to know anything about neventstore
+                //also, if we don't store the events it would be much more difficult to recover the events from a revision number
                 transaction = _connection.StartTransactionAsync(streamId, attempt.ExpectedVersion()).Result;
                 
                 var position = 0;
@@ -109,13 +120,8 @@ namespace NEventStore.Persistence.EventStore
                     transaction.WriteAsync(pageEvents).Wait();
                     position += _options.WritePageSize;
                 }
-                ///TODO:Solve this issue
-                //The Commit stream is only being used to ensure that no commit is duplicated, but since there`s no interstream transaction support in GES this can be risk.
-                //If for some reason the commit is writted and the events are not there`ll be a lock and no futher event will be written
-                WriteCommit(attempt);
-                CheckSnapshotThreshold(attempt);
                 var result = transaction.CommitAsync().Result;
-             
+                _controlStrategy.PostProcessCommitAttempt(attempt);
                 return attempt.ToCommit(result);
             }
             catch (AggregateException ex)
@@ -146,32 +152,9 @@ namespace NEventStore.Persistence.EventStore
             
         }
 
-        private void CheckSnapshotThreshold(CommitAttempt attempt)
-        {
-            if (attempt.StreamRevision > _options.MinimunSnapshotThreshold)
-            {
-                var isSnapShotCandidate = false;
-                var metadata = _connection.GetStreamMetadataAsync(attempt.GetStreamName(_namingStrategy))
-                    .Result.StreamMetadata;
-                metadata.TryGetValue(MetadataKeys.IsSnapShotCandidate, out isSnapShotCandidate);
-                if (!isSnapShotCandidate)
-                {
-                    var newData = metadata.Clone().SetCustomProperty(MetadataKeys.IsSnapShotCandidate, true).Build();
-                    _connection.SetStreamMetadataAsync(attempt.GetStreamName(_namingStrategy), ExpectedVersion.Any,
-                        newData).Wait();
-                    _connection.AppendToStreamAsync(_namingStrategy.CreateStreamsToSnapshot(attempt.BucketId),ExpectedVersion.Any,
-                        new SnapshotThresholdReached() {StreamId = attempt.StreamId}.ToEventData(_serializer)).Wait();
-                }
+       
 
-            }
-        }
-
-        private void WriteCommit(CommitAttempt attempt)
-        {
-            _connection.AppendToStreamAsync(attempt.CreateStreamCommitsName(_namingStrategy), attempt.ExpectedCommitVersion(),
-                attempt.ToEventData(_serializer)).Wait();
-        }
-
+       
         public ISnapshot GetSnapshot(string bucketId, string streamId, int maxRevision)
         {
             StreamEventsSlice currentSlice;
@@ -214,7 +197,6 @@ namespace NEventStore.Persistence.EventStore
         public IEnumerable<IStreamHead> GetStreamsToSnapshot(string bucketId, int maxThreshold)
         {
             
-            var retval = new List<IStreamHead>();
             StreamEventsSlice currentSlice;
             var nextSliceStart = StreamPosition.Start;
             do
@@ -222,6 +204,7 @@ namespace NEventStore.Persistence.EventStore
                 currentSlice =
                     _connection.ReadStreamEventsForwardAsync(_namingStrategy.CreateStreamsToSnapshot(bucketId),
                         nextSliceStart, _options.ReadPageSize, true).Result;
+                
                 foreach (var resolvedEvent in currentSlice.Events)
                 {
                     var evt = _serializer.Deserialize<SnapshotThresholdReached>(resolvedEvent.Event.Data);
@@ -237,22 +220,21 @@ namespace NEventStore.Persistence.EventStore
                         var snapShot = lastSnapShots.Events.FirstOrDefault().Event.ToSnapshot(_serializer);
                         snapshotRevision = snapShot.StreamRevision;
                     }
-                    if (headRevision - snapshotRevision  > _options.MinimunSnapshotThreshold)
+                    if (headRevision - snapshotRevision >= maxThreshold)
                     {
-                        retval.Add(new StreamHead(bucketId, evt.StreamId, headRevision, snapshotRevision));    
+                        yield return new StreamHead(bucketId, evt.StreamId, headRevision, snapshotRevision);
                     }
                     
 
                 }
                 nextSliceStart = currentSlice.NextEventNumber;
             } while (!currentSlice.IsEndOfStream);
-            return retval;
+            
         }
 
         public void Initialize()
         {
-            ///TODO:Start listening for changes in the bucket stream after the initial load
-            _connection.ActOnAll<BucketCreated>(_namingStrategy.BucketsStream, evt => _buckets.Add(evt.Bucket), _serializer);
+            _controlStrategy.Initialize();
         }
 
         public IEnumerable<ICommit> GetFrom(string bucketId, DateTime start)
@@ -287,10 +269,7 @@ namespace NEventStore.Persistence.EventStore
 
         public void Purge()
         {
-            foreach (string bucket in _buckets)
-            {
-                Purge(bucket);
-            }
+            _connection.ActOnAll<BucketCreated>(_namingStrategy.BucketsStream, evt => Purge(evt.Bucket), _serializer);
             _connection.DeleteStreamAsync(_namingStrategy.BucketsStream, ExpectedVersion.Any).Wait();
         }
 
@@ -305,7 +284,7 @@ namespace NEventStore.Persistence.EventStore
 
         public void Drop()
         {
-            throw new NotImplementedException();
+            Purge();
         }
 
         public void DeleteStream(string bucketId, string streamId)
@@ -322,19 +301,7 @@ namespace NEventStore.Persistence.EventStore
 
         
 
-        private void AddStream(string bucketId, string streamId)
-        {
-            _connection.AppendToStreamAsync(_namingStrategy.CreateBucketStreamsStream(bucketId), ExpectedVersion.Any,
-                new StreamCreated {BucketId = bucketId, StreamId = streamId}.ToEventData(_serializer)).Wait();
-        }
-
-        private void AddBucket(string bucketId)
-        {
-            _buckets.Add(bucketId);
-            _connection.AppendToStreamAsync(_namingStrategy.BucketsStream, ExpectedVersion.Any,
-                new BucketCreated {Bucket = bucketId}.ToEventData(_serializer)).Wait();
-
-        }
+       
 
        
     }

@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using EventStore.ClientAPI;
 using NEventStore.Persistence.EventStore.Services;
+using NEventStore.Persistence.EventStore.Services.Naming;
 
 namespace NEventStore.Persistence.EventStore.Extensions
 {
@@ -56,5 +58,7 @@ namespace NEventStore.Persistence.EventStore.Extensions
             }
             return expected;
         }
+
+        
     }
 }

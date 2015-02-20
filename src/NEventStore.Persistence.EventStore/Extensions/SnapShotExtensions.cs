@@ -1,6 +1,7 @@
 ﻿using System;
 using EventStore.ClientAPI;
 using NEventStore.Persistence.EventStore.Services;
+using NEventStore.Persistence.EventStore.Services.Naming;
 
 namespace NEventStore.Persistence.EventStore.Extensions
 {

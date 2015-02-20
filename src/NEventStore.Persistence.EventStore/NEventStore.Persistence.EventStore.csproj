@@ -66,18 +66,24 @@
     <Compile Include="Extensions\EventStoreConnectionExtensions.cs" />
     <Compile Include="EventStorePersistenceEngine.cs" />
     <Compile Include="Headers.cs" />
+    <Compile Include="Projections\ProjectionDefinitions.cs" />
+    <Compile Include="Services\Control\IControlStrategy.cs" />
+    <Compile Include="Services\Control\NoProjectionStrategy.cs" />
+    <Compile Include="Services\Control\UseProjectionsStrategy.cs" />
     <Compile Include="Services\Serialization\CustomDictionaryConverter.cs" />
     <Compile Include="Services\Serialization\CustomKeyValuePairConverter.cs" />
-    <Compile Include="Services\DefaultNamingStrategy.cs" />
+    <Compile Include="Services\Naming\DefaultNamingStrategy.cs" />
     <Compile Include="Services\Serialization\IEventStoreSerializer.cs" />
-    <Compile Include="Services\IStreamNameStrategy.cs" />
+    <Compile Include="Services\Naming\IStreamNameStrategy.cs" />
     <Compile Include="Services\Serialization\JsonNetSerializer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="Projections\Buckets.js" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -1,5 +1,6 @@
 ﻿using NEventStore.Logging;
 using NEventStore.Persistence.EventStore.Services;
+using NEventStore.Persistence.EventStore.Services.Naming;
 
 namespace NEventStore.Persistence.EventStore
 {
@@ -8,12 +9,13 @@ namespace NEventStore.Persistence.EventStore
         private static readonly ILog Logger = LogFactory.BuildLogger(typeof (EventStorePersistenceWireup));
 
         public EventStorePersistenceWireup(Wireup inner, EventStorePersistenceOptions persistenceOptions,
-            IEventStoreSerializer serializer, IStreamNamingStrategy namingStrategy)
+            IEventStoreSerializer serializer, IStreamNamingStrategy namingStrategy,bool useProjections)
             : base(inner)
         {
             Logger.Debug("Configuring EventStore persistence engine.");
             Container.Register(
-                c => new EventStorePersistenceFactory(persistenceOptions, serializer, namingStrategy).Build());
+                c => new EventStorePersistenceFactory(persistenceOptions, serializer, namingStrategy,useProjections).Build());
         }
+
     }
 }
