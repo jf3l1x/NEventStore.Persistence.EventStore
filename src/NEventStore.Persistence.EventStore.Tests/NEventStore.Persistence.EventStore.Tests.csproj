@@ -60,10 +60,15 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Features\Persistence.feature.cs">
+    <Compile Include="Features\PersistenceWhitoutProjections.feature.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>Persistence.feature</DependentUpon>
+      <DependentUpon>PersistenceWhitoutProjections.feature</DependentUpon>
+    </Compile>
+    <Compile Include="Features\PersistenceWithProjections.feature.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>PersistenceWithProjections.feature</DependentUpon>
     </Compile>
     <Compile Include="Keys.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -72,9 +77,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="Features\Persistence.feature">
+    <None Include="Features\PersistenceWhitoutProjections.feature">
       <Generator>SpecFlowSingleFileGenerator</Generator>
-      <LastGenOutput>Persistence.feature.cs</LastGenOutput>
+      <LastGenOutput>PersistenceWhitoutProjections.feature.cs</LastGenOutput>
+    </None>
+    <None Include="Features\PersistenceWithProjections.feature">
+      <Generator>SpecFlowSingleFileGenerator</Generator>
+      <LastGenOutput>PersistenceWithProjections.feature.cs</LastGenOutput>
     </None>
     <None Include="packages.config" />
   </ItemGroup>

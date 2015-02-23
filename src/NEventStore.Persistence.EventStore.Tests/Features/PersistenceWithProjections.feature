@@ -1,10 +1,10 @@
-﻿Feature: Persistence
+﻿Feature: Persistence With Projections
 
 Background: 
 	Given i have the following options
-	| WritePageSize | ReadPageSize | MinimunSnapshotThreshold |
-	| 50            | 50           | 1                        |
-	Given I have a PersistenceEngine
+	| WritePageSize | ReadPageSize | MinimunSnapshotThreshold | UserName | Password |
+	| 50            | 50           | 1                        | admin    | changeit |
+	Given I have a PersistenceEngine using projections
 	Given I have initiliazed the Engine
 	Given The PersistentStore is empty
 	Given I Have defined a default bucket 

@@ -1,6 +1,6 @@
 ﻿namespace NEventStore.Persistence.EventStore.Events
 {
-    public class SnapshotThresholdReached : EventBase
+    public class SnapshotThresholdReached 
     {
         public string StreamId { get; set; }
     }

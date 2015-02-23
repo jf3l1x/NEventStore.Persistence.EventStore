@@ -29,7 +29,7 @@ namespace NEventStore.Persistence.EventStore.Services.Control
         {
 
             ///TODO:Start listening for changes in the bucket stream after the initial load
-            _connection.ActOnAll<BucketCreated>(_namingStrategy.BucketsStream, evt => _buckets.Add(evt.Bucket), _serializer);
+            _connection.ActOnAll<string>(_namingStrategy.BucketsStream, evt => _buckets.Add(evt), _serializer, _options.UserCredentials);
         }
 
         public void PreProcessCommitAttempt(CommitAttempt attempt)
@@ -55,15 +55,15 @@ namespace NEventStore.Persistence.EventStore.Services.Control
 
         private void AddStream(string bucketId, string streamId)
         {
-            _connection.AppendToStreamAsync(_namingStrategy.CreateBucketStreamsStream(bucketId), ExpectedVersion.Any,
+            _connection.AppendToStreamAsync(_namingStrategy.CreateBucketStreamsStream(bucketId), ExpectedVersion.Any,_options.UserCredentials,
                 new StreamCreated {BucketId = bucketId, StreamId = streamId}.ToEventData(_serializer)).Wait();
         }
 
         private void AddBucket(string bucketId)
         {
             _buckets.Add(bucketId);
-            _connection.AppendToStreamAsync(_namingStrategy.BucketsStream, ExpectedVersion.Any,
-                new BucketCreated {Bucket = bucketId}.ToEventData(_serializer)).Wait();
+            _connection.AppendToStreamAsync(_namingStrategy.BucketsStream, ExpectedVersion.Any, _options.UserCredentials,
+                 bucketId.ToEventData(_serializer)).Wait();
         }
 
         private void CheckSnapshotThreshold(CommitAttempt attempt)
@@ -71,7 +71,7 @@ namespace NEventStore.Persistence.EventStore.Services.Control
             if (attempt.StreamRevision > _options.MinimunSnapshotThreshold)
             {
                 bool isSnapShotCandidate = false;
-                StreamMetadata metadata = _connection.GetStreamMetadataAsync(attempt.GetStreamName(_namingStrategy))
+                StreamMetadata metadata = _connection.GetStreamMetadataAsync(attempt.GetStreamName(_namingStrategy), _options.UserCredentials)
                     .Result.StreamMetadata;
                 metadata.TryGetValue(MetadataKeys.IsSnapShotCandidate, out isSnapShotCandidate);
                 if (!isSnapShotCandidate)
@@ -79,9 +79,9 @@ namespace NEventStore.Persistence.EventStore.Services.Control
                     StreamMetadata newData =
                         metadata.Clone().SetCustomProperty(MetadataKeys.IsSnapShotCandidate, true).Build();
                     _connection.SetStreamMetadataAsync(attempt.GetStreamName(_namingStrategy), ExpectedVersion.Any,
-                        newData).Wait();
+                        newData, _options.UserCredentials).Wait();
                     _connection.AppendToStreamAsync(_namingStrategy.CreateStreamsToSnapshot(attempt.BucketId),
-                        ExpectedVersion.Any,
+                        ExpectedVersion.Any, _options.UserCredentials,
                         new SnapshotThresholdReached {StreamId = attempt.StreamId}.ToEventData(_serializer)).Wait();
                 }
             }
@@ -91,7 +91,7 @@ namespace NEventStore.Persistence.EventStore.Services.Control
         {
 
             _connection.AppendToStreamAsync(attempt.CreateStreamCommitsName(_namingStrategy),
-                attempt.ExpectedCommitVersion(),
+                attempt.ExpectedCommitVersion(), _options.UserCredentials,
                 attempt.ToEventData(_serializer)).Wait();
         }
     }

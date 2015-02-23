@@ -1,5 +1,7 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
 
 namespace NEventStore.Persistence.EventStore
 {
@@ -10,6 +12,7 @@ namespace NEventStore.Persistence.EventStore
             WritePageSize = 500;
             ReadPageSize = 500;
             UseProjections = false;
+            ProjectionRegistrationTimeout = TimeSpan.FromMinutes(5);
         }
 
         public int WritePageSize { get; set; }
@@ -18,7 +21,10 @@ namespace NEventStore.Persistence.EventStore
         public int MinimunSnapshotThreshold { get; set; }
         public ConnectionSettings ConnectionSettings { get; set; }
         public ClusterSettings ClusterSettings { get; set; }
-        public IPEndPoint Server { get; set; }
+        public IPEndPoint TcpeEndPoint { get; set; }
+        public IPEndPoint HttpEndPoint { get; set; }
+        public UserCredentials UserCredentials { get; set; }
+        public TimeSpan ProjectionRegistrationTimeout { get; set; }
 
         public IEventStoreConnection CreateConnection()
         {
@@ -28,9 +34,9 @@ namespace NEventStore.Persistence.EventStore
                 {
                     return EventStoreConnection.Create(ConnectionSettings, ClusterSettings);
                 }
-                return EventStoreConnection.Create(ConnectionSettings, Server);
+                return EventStoreConnection.Create(ConnectionSettings, TcpeEndPoint);
             }
-            return EventStoreConnection.Create(Server);
+            return EventStoreConnection.Create(TcpeEndPoint);
         }
     }
 }

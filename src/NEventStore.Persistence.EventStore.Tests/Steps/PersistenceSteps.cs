@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
 using FluentAssertions;
 using NEventStore.Persistence.EventStore.Services;
 using NEventStore.Persistence.EventStore.Services.Naming;
@@ -12,7 +13,6 @@ using TechTalk.SpecFlow;
 namespace NEventStore.Persistence.EventStore.Tests.Steps
 {
     [Binding]
-    [Scope(Feature = "Persistence")]
     internal class PersistenceSteps
     {
         private ICommit FirstCommit
@@ -23,10 +23,25 @@ namespace NEventStore.Persistence.EventStore.Tests.Steps
         [Given(@"I have a PersistenceEngine")]
         public void GivenIHaveAPersistenceEngine()
         {
-            IEventStoreConnection connection = EventStoreConnection.Create(new IPEndPoint(IPAddress.Loopback, 1113));
+            CreatePersistenceEngine();
+        }
+
+        private static void CreatePersistenceEngine(bool useProjections=false)
+        {
+            var options = ScenarioContext.Current.Get<EventStorePersistenceOptions>();
+            options.TcpeEndPoint = new IPEndPoint(IPAddress.Loopback, 1113);
+            options.HttpEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
+            IEventStoreConnection connection = EventStoreConnection.Create(options.TcpeEndPoint);
             connection.ConnectAsync().Wait();
-            ScenarioContext.Current.Add(new EventStorePersistenceEngine(connection, new JsonNetSerializer(),new DefaultNamingStrategy(), 
-                ScenarioContext.Current.Get<EventStorePersistenceOptions>(),false));
+            ScenarioContext.Current.Add(new EventStorePersistenceEngine(connection, new JsonNetSerializer(),
+                new DefaultNamingStrategy(),
+                options, useProjections));
+        }
+
+        [Given(@"I have a PersistenceEngine using projections")]
+        public void GivenIHaveAPersistenceEngineUsingProjections()
+        {
+            CreatePersistenceEngine(true);
         }
 
         [Given(@"i have the following options")]
@@ -36,7 +51,8 @@ namespace NEventStore.Persistence.EventStore.Tests.Steps
             {
                 WritePageSize = int.Parse(table.Rows[0]["WritePageSize"]),
                 ReadPageSize = int.Parse(table.Rows[0]["ReadPageSize"]),
-                MinimunSnapshotThreshold = int.Parse(table.Rows[0]["MinimunSnapshotThreshold"])
+                MinimunSnapshotThreshold = int.Parse(table.Rows[0]["MinimunSnapshotThreshold"]),
+                UserCredentials = table.Rows[0].ContainsKey("UserName") ? new UserCredentials(table.Rows[0]["UserName"], table.Rows[0]["Password"]) : null
             });
         }
 

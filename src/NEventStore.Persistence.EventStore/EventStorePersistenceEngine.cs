@@ -80,7 +80,7 @@ namespace NEventStore.Persistence.EventStore
         {
             var range = new VersionRange(minRevision, maxRevision);
             StreamEventsSlice slice = _connection.ReadStreamEventsForwardAsync(_namingStrategy.CreateStream(bucketId, streamId),
-                range.MinVersion, range.EventCount, true).Result;
+                range.MinVersion, range.EventCount, true,_options.UserCredentials).Result;
             PersistentEvent[] events = slice.Events.Select(evt =>
                 new PersistentEvent(evt, _serializer)).ToArray();
             return
@@ -111,7 +111,7 @@ namespace NEventStore.Persistence.EventStore
                 //The reason to write the events directly and not the commits is to maintain the event type intact in the event store
                 //This can facilitate the writing of projections and listeners do not need to know anything about neventstore
                 //also, if we don't store the events it would be much more difficult to recover the events from a revision number
-                transaction = _connection.StartTransactionAsync(streamId, attempt.ExpectedVersion()).Result;
+                transaction = _connection.StartTransactionAsync(streamId, attempt.ExpectedVersion(), _options.UserCredentials).Result;
                 
                 var position = 0;
                 while (position < eventsToSave.Length)
@@ -163,7 +163,7 @@ namespace NEventStore.Persistence.EventStore
             {
                 currentSlice =
                 _connection.ReadStreamEventsBackwardAsync(_namingStrategy.CreateStreamSnapshots(bucketId,streamId), nextSliceStart,
-                                                              _options.ReadPageSize,true)
+                                                              _options.ReadPageSize,true,_options.UserCredentials)
                                                               .Result;
                 foreach (var resolvedEvent in currentSlice.Events)
                 {
@@ -181,7 +181,7 @@ namespace NEventStore.Persistence.EventStore
 
         public bool AddSnapshot(ISnapshot snapshot)
         {
-            _connection.AppendToStreamAsync(snapshot.GetStreamName(_namingStrategy), ExpectedVersion.Any,
+            _connection.AppendToStreamAsync(snapshot.GetStreamName(_namingStrategy), ExpectedVersion.Any, _options.UserCredentials,
                 snapshot.ToEventData(_serializer)).Wait();
             return true;
             
@@ -203,17 +203,17 @@ namespace NEventStore.Persistence.EventStore
             {
                 currentSlice =
                     _connection.ReadStreamEventsForwardAsync(_namingStrategy.CreateStreamsToSnapshot(bucketId),
-                        nextSliceStart, _options.ReadPageSize, true).Result;
+                        nextSliceStart, _options.ReadPageSize, true, _options.UserCredentials).Result;
                 
                 foreach (var resolvedEvent in currentSlice.Events)
                 {
                     var evt = _serializer.Deserialize<SnapshotThresholdReached>(resolvedEvent.Event.Data);
                     var headRevision =
                         _connection.ReadStreamEventsBackwardAsync(_namingStrategy.CreateStream(bucketId, evt.StreamId),
-                            StreamPosition.End, 1, true).Result.LastEventNumber + 1;
+                            StreamPosition.End, 1, true, _options.UserCredentials).Result.LastEventNumber + 1;
                     var lastSnapShots =
                         _connection.ReadStreamEventsBackwardAsync(
-                            _namingStrategy.CreateStreamSnapshots(bucketId, evt.StreamId), StreamPosition.End, 1, true).Result;
+                            _namingStrategy.CreateStreamSnapshots(bucketId, evt.StreamId), StreamPosition.End, 1, true, _options.UserCredentials).Result;
                     var snapshotRevision = 0;
                     if (lastSnapShots.LastEventNumber >= 0)
                     {
@@ -269,17 +269,17 @@ namespace NEventStore.Persistence.EventStore
 
         public void Purge()
         {
-            _connection.ActOnAll<BucketCreated>(_namingStrategy.BucketsStream, evt => Purge(evt.Bucket), _serializer);
-            _connection.DeleteStreamAsync(_namingStrategy.BucketsStream, ExpectedVersion.Any).Wait();
+            _connection.ActOnAll<string>(_namingStrategy.BucketsStream, Purge, _serializer, _options.UserCredentials);
+            _connection.DeleteStreamAsync(_namingStrategy.BucketsStream, ExpectedVersion.Any, _options.UserCredentials).Wait();
         }
 
         public void Purge(string bucketId)
         {
             string streamId = _namingStrategy.CreateBucketStreamsStream(bucketId);
             _connection.ActOnAll<StreamCreated>(streamId,
-                evt => DeleteStream(evt.BucketId, evt.StreamId), _serializer);
-            _connection.DeleteStreamAsync(streamId, ExpectedVersion.Any).Wait();
-            _connection.DeleteStreamAsync(_namingStrategy.CreateStreamsToSnapshot(bucketId), ExpectedVersion.Any).Wait();
+                evt => DeleteStream(evt.BucketId, evt.StreamId), _serializer, _options.UserCredentials);
+            _connection.DeleteStreamAsync(streamId, ExpectedVersion.Any, _options.UserCredentials).Wait();
+            _connection.DeleteStreamAsync(_namingStrategy.CreateStreamsToSnapshot(bucketId), ExpectedVersion.Any, _options.UserCredentials).Wait();
         }
 
         public void Drop()
@@ -289,9 +289,9 @@ namespace NEventStore.Persistence.EventStore
 
         public void DeleteStream(string bucketId, string streamId)
         {
-            _connection.DeleteStreamAsync(_namingStrategy.CreateStream(bucketId, streamId), ExpectedVersion.Any).Wait();
-            _connection.DeleteStreamAsync(_namingStrategy.CreateStreamCommits(bucketId, streamId), ExpectedVersion.Any).Wait();
-            _connection.DeleteStreamAsync(_namingStrategy.CreateStreamSnapshots(bucketId, streamId), ExpectedVersion.Any).Wait();
+            _connection.DeleteStreamAsync(_namingStrategy.CreateStream(bucketId, streamId), ExpectedVersion.Any, _options.UserCredentials).Wait();
+            _connection.DeleteStreamAsync(_namingStrategy.CreateStreamCommits(bucketId, streamId), ExpectedVersion.Any, _options.UserCredentials).Wait();
+            _connection.DeleteStreamAsync(_namingStrategy.CreateStreamSnapshots(bucketId, streamId), ExpectedVersion.Any, _options.UserCredentials).Wait();
         }
 
         public bool IsDisposed
