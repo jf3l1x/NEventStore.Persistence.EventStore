@@ -24,7 +24,7 @@
 
         public string CreateStreamSnapshots(string bucketId, string streamId)
         {
-            return string.Format("NES.{0}.{1}.SNAPSHOTS", bucketId, streamId);
+            return string.Format("nessnapshots-{0}.{1}", bucketId, streamId);
         }
 
         public string CreateStreamsToSnapshot(string bucketId)

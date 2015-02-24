@@ -54,9 +54,10 @@
     <Compile Include="EventStorePersistenceWireupExtensions.cs" />
     <Compile Include="Events\SnapshotThresholdReached.cs" />
     <Compile Include="Extensions\ProjectionManagerExtensions.cs" />
-    <Compile Include="Extensions\SnapShotExtensions.cs" />
+    <Compile Include="Extensions\SnapshotExtensions.cs" />
     <Compile Include="Extensions\StreamMetadataExtensions.cs" />
     <Compile Include="MetadataKeys.cs" />
+    <Compile Include="Models\EventHeader.cs" />
     <Compile Include="Models\PersistentEvent.cs" />
     <Compile Include="Events\StreamCreated.cs" />
     <Compile Include="Extensions\CommitAttemptExtensions.cs" />
@@ -77,12 +78,19 @@
     <Compile Include="Services\Naming\IStreamNameStrategy.cs" />
     <Compile Include="Services\Serialization\JsonNetSerializer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Models\SnapshotMetadata.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Projections\Buckets.js" />
+    <EmbeddedResource Include="Projections\Events.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Projections\Snapshots.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Projections\StreamsToSnapshot.js" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

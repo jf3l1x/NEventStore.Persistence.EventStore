@@ -57,7 +57,7 @@ namespace NEventStore.Persistence.EventStore
             {
                 if (namingStrategy != null)
                 {
-                    Logger.Warn("Ignoring naming strategy because it`s not supported wehn using projections");
+                    Logger.Warn("Ignoring naming strategy because it's not supported when using projections");
                 }
                 _namingStrategy = new DefaultNamingStrategy();
                 _controlStrategy = new UseProjectionsStrategy(_options);
@@ -181,8 +181,10 @@ namespace NEventStore.Persistence.EventStore
 
         public bool AddSnapshot(ISnapshot snapshot)
         {
+            var last = _connection.GetLast<Snapshot>(snapshot.GetStreamName(_namingStrategy), _serializer,
+                _options.UserCredentials);
             _connection.AppendToStreamAsync(snapshot.GetStreamName(_namingStrategy), ExpectedVersion.Any, _options.UserCredentials,
-                snapshot.ToEventData(_serializer)).Wait();
+                snapshot.ToEventData(_serializer, new SnapshotMetadata(last))).Wait();
             return true;
             
             

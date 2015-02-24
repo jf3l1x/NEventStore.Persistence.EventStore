@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using NEventStore.Persistence.EventStore.Services;
@@ -21,6 +22,16 @@ namespace NEventStore.Persistence.EventStore.Extensions
                     action((T)serializer.Deserialize(typeof(T).FullName,resolvedEvent.Event.Data));
                 }
             } while (!currentSlice.IsEndOfStream);
+        }
+
+        public static T GetLast<T>(this IEventStoreConnection connection, string streamId, IEventStoreSerializer serializer, UserCredentials credentials)
+        {
+            StreamEventsSlice currentSlice = connection.ReadStreamEventsBackwardAsync(streamId, StreamPosition.End, 1, true, credentials).Result;
+            if (currentSlice.Events.Any())
+            {
+                return serializer.Deserialize<T>(currentSlice.Events[0].Event.Data);
+            }
+            return default (T);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Text.RegularExpressions;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 
@@ -26,6 +27,15 @@ namespace NEventStore.Persistence.EventStore
         public UserCredentials UserCredentials { get; set; }
         public TimeSpan ProjectionRegistrationTimeout { get; set; }
 
+        public string Evaluate(Match match)
+        {
+            var property = match.Groups["Option"].Value;
+            if (!string.IsNullOrEmpty(property))
+            {
+                return GetType().GetProperty(property).GetValue(this).ToString();
+            }
+            return string.Empty;
+        }
         public IEventStoreConnection CreateConnection()
         {
             if (ConnectionSettings != null)
