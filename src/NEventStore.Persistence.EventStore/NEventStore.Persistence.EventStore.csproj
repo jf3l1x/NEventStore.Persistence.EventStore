@@ -53,7 +53,6 @@
     <Compile Include="EventStorePersistenceWireup.cs" />
     <Compile Include="EventStorePersistenceWireupExtensions.cs" />
     <Compile Include="Events\SnapshotThresholdReached.cs" />
-    <Compile Include="Extensions\ProjectionManagerExtensions.cs" />
     <Compile Include="Extensions\SnapshotExtensions.cs" />
     <Compile Include="Extensions\StreamMetadataExtensions.cs" />
     <Compile Include="MetadataKeys.cs" />
@@ -65,11 +64,8 @@
     <Compile Include="Extensions\EventStoreConnectionExtensions.cs" />
     <Compile Include="EventStorePersistenceEngine.cs" />
     <Compile Include="Headers.cs" />
-    <Compile Include="Projections\ProjectionDefinitions.cs" />
-    <Compile Include="Projections\ProjectionInfo.cs" />
     <Compile Include="Services\Control\IControlStrategy.cs" />
     <Compile Include="Services\Control\NoProjectionStrategy.cs" />
-    <Compile Include="Services\Control\UseProjectionsStrategy.cs" />
     <Compile Include="Services\EventStoreLogger.cs" />
     <Compile Include="Services\Serialization\CustomDictionaryConverter.cs" />
     <Compile Include="Services\Serialization\CustomKeyValuePairConverter.cs" />
@@ -82,15 +78,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Projections\Events.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Projections\Snapshots.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Projections\StreamsToSnapshot.js" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

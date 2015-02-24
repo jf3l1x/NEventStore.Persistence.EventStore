@@ -13,7 +13,7 @@ namespace NEventStore.Persistence.EventStore
             WritePageSize = 500;
             ReadPageSize = 500;
             UseProjections = false;
-            ProjectionRegistrationTimeout = TimeSpan.FromMinutes(5);
+            
         }
 
         public int WritePageSize { get; set; }
@@ -25,7 +25,7 @@ namespace NEventStore.Persistence.EventStore
         public IPEndPoint TcpeEndPoint { get; set; }
         public IPEndPoint HttpEndPoint { get; set; }
         public UserCredentials UserCredentials { get; set; }
-        public TimeSpan ProjectionRegistrationTimeout { get; set; }
+        
 
         public string Evaluate(Match match)
         {

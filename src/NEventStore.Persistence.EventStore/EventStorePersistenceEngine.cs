@@ -48,25 +48,14 @@ namespace NEventStore.Persistence.EventStore
         }
         private bool _disposed;
         
-        public EventStorePersistenceEngine(IEventStoreConnection connection, IEventStoreSerializer serializer,IStreamNamingStrategy namingStrategy,EventStorePersistenceOptions options,bool useProjections)
+        public EventStorePersistenceEngine(IEventStoreConnection connection, IEventStoreSerializer serializer,IStreamNamingStrategy namingStrategy,EventStorePersistenceOptions options)
         {
             _connection = connection;
             _serializer = serializer;
             _options = options;
-            if (useProjections )
-            {
-                if (namingStrategy != null)
-                {
-                    Logger.Warn("Ignoring naming strategy because it's not supported when using projections");
-                }
-                _namingStrategy = new DefaultNamingStrategy();
-                _controlStrategy = new UseProjectionsStrategy(_options);
-            }
-            else
-            {
-                _namingStrategy = namingStrategy;
-                _controlStrategy = new NoProjectionStrategy(_connection, _options,namingStrategy,serializer);
-            }
+            _namingStrategy = namingStrategy;
+            _controlStrategy = new NoProjectionStrategy(_connection, _options,namingStrategy,serializer);
+           
 
             
         }

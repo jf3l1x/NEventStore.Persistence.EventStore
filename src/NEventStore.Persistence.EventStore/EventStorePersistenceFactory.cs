@@ -11,17 +11,17 @@ namespace NEventStore.Persistence.EventStore
         private readonly IEventStoreSerializer _serializer;
 
         public EventStorePersistenceFactory(EventStorePersistenceOptions options, IEventStoreSerializer serializer,
-            IStreamNamingStrategy namingStrategy,bool useProjections)
+            IStreamNamingStrategy namingStrategy)
         {
             _options = options;
             _serializer = serializer;
             _namingStrategy = namingStrategy;
-            _useProjections = useProjections;
+          
         }
 
         public IPersistStreams Build()
         {
-            return new EventStorePersistenceEngine(_options.CreateConnection(), _serializer, _namingStrategy, _options,_useProjections);
+            return new EventStorePersistenceEngine(_options.CreateConnection(), _serializer, _namingStrategy, _options);
         }
     }
 }

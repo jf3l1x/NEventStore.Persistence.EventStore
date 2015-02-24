@@ -8,12 +8,12 @@ namespace NEventStore.Persistence.EventStore
         public static PersistenceWireup UsingEventStorePersistence(this Wireup wireup,
             EventStorePersistenceOptions options, IEventStoreSerializer serializer, IStreamNamingStrategy namingStrategy)
         {
-            return new EventStorePersistenceWireup(wireup, options, serializer, namingStrategy,false);
+            return new EventStorePersistenceWireup(wireup, options, serializer, namingStrategy);
         }
         public static PersistenceWireup UsingEventStorePersistenceWithProjections(this Wireup wireup,
            EventStorePersistenceOptions options, IEventStoreSerializer serializer, IStreamNamingStrategy namingStrategy)
         {
-            return new EventStorePersistenceWireup(wireup, options, serializer, namingStrategy,true);
+            return new EventStorePersistenceWireup(wireup, options, serializer, namingStrategy);
         }
     }
 }

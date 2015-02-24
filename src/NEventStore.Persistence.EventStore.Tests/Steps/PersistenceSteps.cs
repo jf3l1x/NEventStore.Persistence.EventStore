@@ -35,7 +35,7 @@ namespace NEventStore.Persistence.EventStore.Tests.Steps
             connection.ConnectAsync().Wait();
             ScenarioContext.Current.Add(new EventStorePersistenceEngine(connection, new JsonNetSerializer(),
                 new DefaultNamingStrategy(),
-                options, useProjections));
+                options));
         }
 
         [Given(@"I have a PersistenceEngine using projections")]

@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NEventStore.Persistence.EventStore.Models
 {
@@ -10,8 +7,9 @@ namespace NEventStore.Persistence.EventStore.Models
     {
         public EventHeader()
         {
-            AdditionalHeaders=new Dictionary<string, object>();
+            AdditionalHeaders = new Dictionary<string, object>();
         }
+
         public string BucketId { get; set; }
         public string StreamId { get; set; }
         public Guid CommitId { get; set; }
