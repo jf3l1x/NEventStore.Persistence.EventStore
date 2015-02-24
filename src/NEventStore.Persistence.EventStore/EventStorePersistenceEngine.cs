@@ -170,57 +170,43 @@ namespace NEventStore.Persistence.EventStore
 
         public bool AddSnapshot(ISnapshot snapshot)
         {
-            var last = _connection.GetLast<Snapshot>(snapshot.GetStreamName(_namingStrategy), _serializer,
-                _options.UserCredentials);
+            
             _connection.AppendToStreamAsync(snapshot.GetStreamName(_namingStrategy), ExpectedVersion.Any, _options.UserCredentials,
-                snapshot.ToEventData(_serializer, new SnapshotMetadata(last))).Wait();
+                snapshot.ToEventData(_serializer)).Wait();
+            _connection.AppendToStreamAsync(_namingStrategy.CreateStreamsToSnapshot(snapshot.BucketId),
+                ExpectedVersion.Any, _options.UserCredentials,
+                snapshot.CreateEventSnapshotCreated().ToEventData(_serializer)).Wait();
             return true;
             
             
 
         }
-        /// <summary>
-        /// This is a very slow operation, use with caution
-        /// </summary>
-        /// <param name="bucketId"></param>
-        /// <param name="maxThreshold"></param>
-        /// <returns></returns>
         public IEnumerable<IStreamHead> GetStreamsToSnapshot(string bucketId, int maxThreshold)
         {
-            
-            StreamEventsSlice currentSlice;
-            var nextSliceStart = StreamPosition.Start;
-            do
+            var heads = new Dictionary<string, StreamHeadChanged>();
+            _connection.ActOnAll<StreamHeadChanged>(_namingStrategy.CreateStreamsToSnapshot(bucketId), (h) =>
             {
-                currentSlice =
-                    _connection.ReadStreamEventsForwardAsync(_namingStrategy.CreateStreamsToSnapshot(bucketId),
-                        nextSliceStart, _options.ReadPageSize, true, _options.UserCredentials).Result;
-                
-                foreach (var resolvedEvent in currentSlice.Events)
+                if (string.Equals(bucketId, h.BucketId, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    var evt = _serializer.Deserialize<SnapshotThresholdReached>(resolvedEvent.Event.Data);
-                    var headRevision =
-                        _connection.ReadStreamEventsBackwardAsync(_namingStrategy.CreateStream(bucketId, evt.StreamId),
-                            StreamPosition.End, 1, true, _options.UserCredentials).Result.LastEventNumber + 1;
-                    var lastSnapShots =
-                        _connection.ReadStreamEventsBackwardAsync(
-                            _namingStrategy.CreateStreamSnapshots(bucketId, evt.StreamId), StreamPosition.End, 1, true, _options.UserCredentials).Result;
-                    var snapshotRevision = 0;
-                    if (lastSnapShots.LastEventNumber >= 0)
+                    StreamHeadChanged head = null;
+                    heads.TryGetValue(h.StreamId, out head);
+                    if (head == null)
                     {
-                        var snapShot = lastSnapShots.Events.FirstOrDefault().Event.ToSnapshot(_serializer);
-                        snapshotRevision = snapShot.StreamRevision;
-                    }
-                    if (headRevision - snapshotRevision >= maxThreshold)
-                    {
-                        yield return new StreamHead(bucketId, evt.StreamId, headRevision, snapshotRevision);
+                        head =h;
+                        heads.Add(h.StreamId,head);
                     }
                     
-
+                    if (head.HeadRevision < h.HeadRevision)
+                    {
+                        head.HeadRevision = h.HeadRevision;
+                    }
+                    if (head.SnapshotRevision < h.SnapshotRevision)
+                    {
+                        head.SnapshotRevision = h.SnapshotRevision;
+                    }
                 }
-                nextSliceStart = currentSlice.NextEventNumber;
-            } while (!currentSlice.IsEndOfStream);
-            
+            },_serializer,_options.UserCredentials);
+            return heads.Values.Where(h => h.HeadRevision - h.SnapshotRevision >= maxThreshold).Select(h=>new StreamHead(h.BucketId,h.StreamId,h.HeadRevision,h.SnapshotRevision));
         }
 
         public void Initialize()

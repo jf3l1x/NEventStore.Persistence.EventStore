@@ -68,22 +68,13 @@ namespace NEventStore.Persistence.EventStore.Services.Control
 
         private void CheckSnapshotThreshold(CommitAttempt attempt)
         {
-            if (attempt.StreamRevision > _options.MinimunSnapshotThreshold)
+            
+            if (attempt.StreamRevision % _options.MinimunSnapshotThreshold<attempt.Events.Count)
             {
-                bool isSnapShotCandidate = false;
-                StreamMetadata metadata = _connection.GetStreamMetadataAsync(attempt.GetStreamName(_namingStrategy), _options.UserCredentials)
-                    .Result.StreamMetadata;
-                metadata.TryGetValue(MetadataKeys.IsSnapShotCandidate, out isSnapShotCandidate);
-                if (!isSnapShotCandidate)
-                {
-                    StreamMetadata newData =
-                        metadata.Clone().SetCustomProperty(MetadataKeys.IsSnapShotCandidate, true).Build();
-                    _connection.SetStreamMetadataAsync(attempt.GetStreamName(_namingStrategy), ExpectedVersion.Any,
-                        newData, _options.UserCredentials).Wait();
-                    _connection.AppendToStreamAsync(_namingStrategy.CreateStreamsToSnapshot(attempt.BucketId),
-                        ExpectedVersion.Any, _options.UserCredentials,
-                        new SnapshotThresholdReached {StreamId = attempt.StreamId}.ToEventData(_serializer)).Wait();
-                }
+                //there's an event inside the commit that is multiple of _options.MinimunSnapshotThreshold
+                _connection.AppendToStreamAsync(_namingStrategy.CreateStreamsToSnapshot(attempt.BucketId),
+               ExpectedVersion.Any, _options.UserCredentials,
+               attempt.CreateRevisionUpdate().ToEventData(_serializer)).Wait();
             }
         }
 

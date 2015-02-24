@@ -4,32 +4,32 @@
     {
         public string BucketsStream
         {
-            get { return "nesbuckets"; }
+            get { return "nesBuckets"; }
         }
 
         public string CreateBucketStreamsStream(string bucketId)
         {
-            return string.Format("nesstreams-{0}", bucketId);
+            return string.Format("nesStreams-{0}", bucketId);
         }
 
         public string CreateStream(string bucketId, string streamId)
         {
-            return string.Format("nesevents-{0}.{1}", bucketId, streamId);
+            return string.Format("nesEvents-{0}.{1}", bucketId, streamId);
         }
 
         public string CreateStreamCommits(string bucketId, string streamId)
         {
-            return string.Format("NES.{0}.{1}.COMMITS", bucketId, streamId);
+            return string.Format("nesCommits-{0}.{1}", bucketId, streamId);
         }
 
         public string CreateStreamSnapshots(string bucketId, string streamId)
         {
-            return string.Format("nessnapshots-{0}.{1}", bucketId, streamId);
+            return string.Format("nesSnapshots-{0}.{1}", bucketId, streamId);
         }
 
         public string CreateStreamsToSnapshot(string bucketId)
         {
-            return string.Format("NES.{0}.STREAMSTOSNAPSHOT", bucketId);
+            return string.Format("nesStreamsToSnapshot-{0}", bucketId);
         }
     }
 }

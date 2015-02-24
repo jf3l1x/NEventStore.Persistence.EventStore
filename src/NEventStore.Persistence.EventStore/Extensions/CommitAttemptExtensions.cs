@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using EventStore.ClientAPI;
+using NEventStore.Persistence.EventStore.Events;
 using NEventStore.Persistence.EventStore.Services;
 using NEventStore.Persistence.EventStore.Services.Naming;
 
@@ -49,6 +50,15 @@ namespace NEventStore.Persistence.EventStore.Extensions
 
         }
 
+        public static StreamHeadChanged CreateRevisionUpdate(this CommitAttempt attempt)
+        {
+            return new StreamHeadChanged()
+            {
+                BucketId = attempt.BucketId,
+                StreamId = attempt.StreamId,
+                HeadRevision = attempt.StreamRevision
+            };
+        }
         public static int ExpectedVersion(this CommitAttempt attempt)
         {
             var expected= attempt.StreamRevision - attempt.Events.Count-1;
